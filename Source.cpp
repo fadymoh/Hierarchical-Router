@@ -21,6 +21,7 @@ const int BLOCKED = -1;
 const int SHARED = -2;
 int GBOXsize = 10;
 int congestion = 150;
+int enable_output = 0;
 int time_out_counter;
 int save_time_min, save_time_hour;
 int failed = 0;
@@ -50,9 +51,97 @@ typedef pair<int, triplet> pt;
 
 str net_name;
 std::unordered_map<string, vector<string>> DEFRoute;
+void block_grid(ThreeDimensions &grid, vector <string> &directions, int &coordinatesi, int &coordinatesj, int &coordinatesk, bool block)
+{
+	for (int i = 0; i < directions.size(); i++)
+	{
+		if (directions[i] == "SOUTH")
+		{
+			//	if (coordinatesj + 1 != grid[coordinatesi].size())
+			coordinatesj++;
+			if (block)
+				grid[coordinatesi][coordinatesj][coordinatesk] = BLOCKED;
+			actual_coordinates.push(triplet(coordinatesi, coordinatesj, coordinatesk));
+		}
+		if (directions[i] == "NORTH")
+		{
+			coordinatesj--;
+			if (block)
+				grid[coordinatesi][coordinatesj][coordinatesk] = BLOCKED;
+			actual_coordinates.push(triplet(coordinatesi, coordinatesj, coordinatesk));
+		}
+		if (directions[i] == "EAST")
+		{
+			//	if (coordinatesk + 1 != grid[coordinatesi][coordinatesj].size())
+			coordinatesk++;
+			if (block)
+				grid[coordinatesi][coordinatesj][coordinatesk] = BLOCKED;
+			actual_coordinates.push(triplet(coordinatesi, coordinatesj, coordinatesk));
+		}
+		if (directions[i] == "WEST")
+		{
+			coordinatesk--;
+			if (block)
+				grid[coordinatesi][coordinatesj][coordinatesk] = BLOCKED;
+			actual_coordinates.push(triplet(coordinatesi, coordinatesj, coordinatesk));
+		}
+		if (directions[i] == "UP")
+		{
+
+			coordinatesi++;
+			if (block)
+				grid[coordinatesi][coordinatesj][coordinatesk] = BLOCKED;
+			actual_coordinates.push(triplet(coordinatesi, coordinatesj, coordinatesk));
+		}
+		if (directions[i] == "DOWN")
+		{
+			coordinatesi--;
+			if (block)
+				grid[coordinatesi][coordinatesj][coordinatesk] = BLOCKED;
+			actual_coordinates.push(triplet(coordinatesi, coordinatesj, coordinatesk));
+		}
+	}
+	directions.clear();
+}
+void create_output(triplet &p, int &counter, int &startx, int &starty, int &endx, int &endy, int &currentlayer, int &prevlayer, string &str_route, string &part1, string &part2, string &viapart, bool mode)
+{
+	if (!counter)
+	{
+		endx = startx = p.second*myparser.get_track_step(p.first);
+		endy = starty = p.third*myparser.get_track_step(p.first);
+		currentlayer = p.first;
+	}
+	if ((currentlayer != p.first) || ((Path.empty()) && mode == true) || (actual_coordinates.empty() && mode == false ))
+	{
+		part1 = " ( " + to_string(startx) + " " + to_string(starty) + " ) ";
+		if ((startx == endx) && (starty == endy))
+			part2 = part1;
+		else if (startx == endx)
+			part2 = " ( * " + to_string(endy) + " )";
+		else if (starty == endy)
+			part2 = " ( " + to_string(endx) + " * )";
+		else
+			part2 = " ( " + to_string(endx) + " " + to_string(endy) + " )";
+
+		if (p.first == currentlayer)
+			viapart = "";
+		else
+		{
+			if (currentlayer > p.first)
+				viapart = " M" + to_string(currentlayer) + "_M" + to_string(p.first);
+			else
+				viapart = " M" + to_string(p.first) + "_M" + to_string(currentlayer);
+		}
 
 
-void PrintDEF(string filename/*, unordered_map<string, vector<string>> DEFRoute*/)
+		str_route = "metal" + to_string(currentlayer) + part1 + part2 + viapart;
+		DEFRoute[net_name].push_back(str_route);
+		currentlayer = p.first;
+		startx = p.second*myparser.get_track_step(p.first);
+		starty = p.third*myparser.get_track_step(p.first);
+	}
+}
+void PrintDEF(string filename)
 {
 	ifstream readdef;
 	ofstream writedef;
@@ -151,7 +240,7 @@ bool isDestination(triplet source, triplet destination)
 //   - (P) 3D POINT
 bool isUnBlocked(ThreeDimensions& Grid, triplet p, ThreeDimensionsCell& celldetails, int mode)
 {
-	if ((Grid[p.first][p.second][p.third] != BLOCKED && mode == DETAILED) || (Grid[p.first][p.second][p.third] < congestion && mode == GLOBAL))
+	if ((Grid[p.first][p.second][p.third] != BLOCKED && mode == DETAILED) || (mode == GLOBAL && Grid[p.first][p.second][p.third] < congestion))
 		return (true);
 	else
 		return (false);
@@ -199,16 +288,11 @@ string find_place(int delta_i, int delta_j, int delta_k) {
 // to destination
 void tracePath(vector<vector<vector<cell>>>& cellDetails, triplet dest, ThreeDimensions& Grid, bool mode)
 {
-
-
+	if (enable_output)
 	printf("\nThe Path is \n");
-	if (mode == DETAILED)
-	cout << "THIS IS DETAILED ROUTING!!!!!!\n";
 	int i = dest.first;
 	int j = dest.second;
 	int k = dest.third;
-
-
 
 	while (!(cellDetails[i][j][k].parent_i == i && cellDetails[i][j][k].parent_j == j && cellDetails[i][j][k].parent_k == k))
 	{
@@ -247,45 +331,14 @@ void tracePath(vector<vector<vector<cell>>>& cellDetails, triplet dest, ThreeDim
 	{
 		triplet p = Path.top();
 		Path.pop();
+		if (enable_output)
 		printf("(%d,%d,%d) \n", p.first, p.second*myparser.get_track_step(p.first), p.third*myparser.get_track_step(p.first));
 		if (mode == DETAILED && !global_detailed)
 		{
-			if (!counter)
-			{
-				endx = startx = p.second*myparser.get_track_step(p.first);
-				endy = starty = p.third*myparser.get_track_step(p.first);
-				currentlayer = p.first;
-			}
-			if ((currentlayer != p.first) || (Path.empty()))
-			{
-				part1 = " ( " + to_string(startx) + " " + to_string(starty) + " ) ";
-				if ((startx == endx) && (starty == endy))
-					part2 = part1;
-				else if (startx == endx)
-					part2 = " ( * " + to_string(endy) + " )";
-				else if (starty == endy)
-					part2 = " ( " + to_string(endx) + " * )";
-				else
-					part2 = " ( " + to_string(endx) + " " + to_string(endy) + " )";
-
-				if (p.first == currentlayer)
-					viapart = "";
-				else
-				{
-					if (currentlayer > p.first)
-						viapart = " M" + to_string(currentlayer) + "_M" + to_string(p.first);
-					else
-						viapart = " M" + to_string(p.first) + "_M" + to_string(currentlayer);
-				}
-
-
-				str_route = "metal" + to_string(currentlayer) + part1 + part2 + viapart;
-				//str_route = "metal" + to_string(currentlayer) + part1 + part2 + viapart;
-				DEFRoute[net_name].push_back(str_route);
-				currentlayer = p.first;
-				startx = p.second*myparser.get_track_step(p.first);
-				starty = p.third*myparser.get_track_step(p.first);
-			}
+			create_output(p, counter,startx, starty, endx, endy, currentlayer, prevlayer, str_route, part1, part2, viapart, true);
+			endx = p.second*myparser.get_track_step(p.first);
+			endy = p.third*myparser.get_track_step(p.first);
+			counter++;
 		}
 		// SHARED : SHOULD BE CHANGED TO BLOCKED AFTERWARDS
 
@@ -297,14 +350,12 @@ void tracePath(vector<vector<vector<cell>>>& cellDetails, triplet dest, ThreeDim
 				Grid[p.first][p.second][p.third]++;
 		}
 
-		endx = p.second*myparser.get_track_step(p.first);
-		endy = p.third*myparser.get_track_step(p.first);
-		counter++;
+	
 	}
 
-	cout << "Path in Moves: " << endl;
+	//cout << "Path in Moves: " << endl;
 	while (!actual_path.empty()) {
-		cout << "MOVE " << actual_path.top() << endl;
+		//cout << "MOVE " << actual_path.top() << endl;
 		directions.push_back(actual_path.top());
 		actual_path.pop();
 	}
@@ -313,88 +364,20 @@ void tracePath(vector<vector<vector<cell>>>& cellDetails, triplet dest, ThreeDim
 		int counter = 0, total_size = actual_path.size();
 
 		int coordinatesi = metal_temp, coordinatesj = prev_pins_coordinates_temp.first, coordinatesk = prev_pins_coordinates_temp.second;
-		for (int i = 0; i < directions.size(); i++)
-		{
-			if (directions[i] == "SOUTH")
-			{
-				coordinatesj++;
-				actual_coordinates.push(triplet(coordinatesi, coordinatesj, coordinatesk));
-			}
-			if (directions[i] == "NORTH")
-			{
-				coordinatesj--;
-				actual_coordinates.push(triplet(coordinatesi, coordinatesj, coordinatesk));
-			}
-			if (directions[i] == "EAST")
-			{
-				coordinatesk++;
-				actual_coordinates.push(triplet(coordinatesi, coordinatesj, coordinatesk));
-			}
-			if (directions[i] == "WEST")
-			{
-				coordinatesk--;
-				actual_coordinates.push(triplet(coordinatesi, coordinatesj, coordinatesk));
-			}
-			if (directions[i] == "UP")
-			{
-
-				coordinatesi++;
-				actual_coordinates.push(triplet(coordinatesi, coordinatesj, coordinatesk));
-			}
-			if (directions[i] == "DOWN")
-			{
-				coordinatesi--;
-				actual_coordinates.push(triplet(coordinatesi, coordinatesj, coordinatesk));
-			}
-		}
-		directions.clear();
-		//	cout << "Actual Final Path Coordinates: " << endl;
+		block_grid(Grid, directions,coordinatesi, coordinatesj, coordinatesk, false);
+		if (enable_output)
+			cout << "Actual Final Path Coordinates: " << endl;
 		while (!actual_coordinates.empty()) {
 			triplet p = actual_coordinates.top();
-			//	printf("(%d,%d,%d) \n", temp_final.first, temp_final.second, temp_final.third);
+			if (enable_output)
+				printf("(%d,%d,%d) \n", p.first, p.second, p.third);
 			actual_coordinates.pop();
-			if (!counter)
-			{
-				endx = startx = p.second*myparser.get_track_step(p.first);
-				endy = starty = p.third*myparser.get_track_step(p.first);
-				currentlayer = p.first;
-			}
-			if ((currentlayer != p.first) || (actual_coordinates.empty()))
-			{
-				part1 = " ( " + to_string(startx) + " " + to_string(starty) + " ) ";
-				if ((startx == endx) && (starty == endy))
-					part2 = part1;
-				else if (startx == endx)
-					part2 = " ( * " + to_string(endy) + " )";
-				else if (starty == endy)
-					part2 = " ( " + to_string(endx) + " * )";
-				else
-					part2 = " ( " + to_string(endx) + " " + to_string(endy) + " )";
-
-				if (p.first == currentlayer)
-					viapart = "";
-				else
-				{
-					if (currentlayer > p.first)
-						viapart = " M" + to_string(currentlayer) + "_M" + to_string(p.first);
-					else
-						viapart = " M" + to_string(p.first) + "_M" + to_string(currentlayer);
-				}
-
-
-				str_route = "metal" + to_string(currentlayer) + part1 + part2 + viapart;
-				//str_route = "metal" + to_string(currentlayer) + part1 + part2 + viapart;
-				DEFRoute[net_name].push_back(str_route);
-				currentlayer = p.first;
-				startx = p.second*myparser.get_track_step(p.first);
-				starty = p.third*myparser.get_track_step(p.first);
-			}
+			create_output(p, counter, startx, starty, endx, endy, currentlayer, prevlayer, str_route, part1, part2, viapart, false);
 			endx = p.second*myparser.get_track_step(p.first);
 			endy = p.third*myparser.get_track_step(p.first);
 			counter++;
 		}
 	}
-	//	cout << endl;
 	return;
 }
 
@@ -419,7 +402,8 @@ bool generate_and_check_dest(triplet new_node, triplet parent_node, vector<vecto
 			cellDetails[new_node.first][new_node.second][new_node.third].parent_i = parent_node.first;
 			cellDetails[new_node.first][new_node.second][new_node.third].parent_j = parent_node.second;
 			cellDetails[new_node.first][new_node.second][new_node.third].parent_k = parent_node.third;
-			//		printf("The destination cell is found\n");
+			if (enable_output)
+					printf("The destination cell is found\n");
 			tracePath(cellDetails, destination_node, Grid, mode);
 			return true;
 		}
@@ -669,10 +653,11 @@ void  GlobalRouting(ThreeDimensions GlobalGrid, vector <pair<pair<triplet, tripl
 
 		all_paths.clear();
 		pair<int, int> new_prev_pins_coordinates, new_current_pins_coordinates;
-		cout << net_name << '\t' << gate_name << '\t' << pin_name << '\t';
+		if (enable_output)
+			cout << net_name << '\t' << gate_name << '\t' << pin_name << '\t';
 		cout << ++OutCount << endl;
 		net_name = nets[q].second.second;
-		//++OutCount;
+
 		current_pins_coordinates = make_pair(nets[q].first.first.first, nets[q].first.first.second);
 		prev_pins_coordinates = make_pair(nets[q].first.second.first, nets[q].first.second.second);
 		metal1 = nets[q].first.first.third;
@@ -680,9 +665,10 @@ void  GlobalRouting(ThreeDimensions GlobalGrid, vector <pair<pair<triplet, tripl
 
 		triplet globalsrc = triplet(metal1, (prev_pins_coordinates.first / GBOXsize), (prev_pins_coordinates.second / GBOXsize));
 		triplet globaltarget = triplet(metal2, (current_pins_coordinates.first / GBOXsize), (current_pins_coordinates.second / GBOXsize));
-
-		cout << "Src:  ( " << metal1 << ", " << (prev_pins_coordinates.first / GBOXsize) << ", " << (prev_pins_coordinates.second / GBOXsize) << ")\n";
-		cout << "Dest:  ( " << metal2 << ", " << (current_pins_coordinates.first / GBOXsize) << ", " << (current_pins_coordinates.second / GBOXsize) << ")\n";
+		if (enable_output) {
+			cout << "Src:  ( " << metal1 << ", " << (prev_pins_coordinates.first / GBOXsize) << ", " << (prev_pins_coordinates.second / GBOXsize) << ")\n";
+			cout << "Dest:  ( " << metal2 << ", " << (current_pins_coordinates.first / GBOXsize) << ", " << (current_pins_coordinates.second / GBOXsize) << ")\n";
+		}
 		int temp_global = global_fail;
 		bool flag_global = false;
 		if (globalsrc.first != globaltarget.first || globalsrc.second != globaltarget.second || globalsrc.third != globaltarget.third)
@@ -697,7 +683,8 @@ void  GlobalRouting(ThreeDimensions GlobalGrid, vector <pair<pair<triplet, tripl
 
 			failed_routing_name.push_back(net_name);
 		}
-		cout << "Src:  ( " << metal1 << ", " << (prev_pins_coordinates.first / GBOXsize) << ", " << (prev_pins_coordinates.second / GBOXsize) << ")\n";
+		if (enable_output)
+			cout << "Src:  ( " << metal1 << ", " << (prev_pins_coordinates.first / GBOXsize) << ", " << (prev_pins_coordinates.second / GBOXsize) << ")\n";
 
 		if (global_fail == temp_global && flag_global)
 		{
@@ -760,13 +747,13 @@ void  GlobalRouting(ThreeDimensions GlobalGrid, vector <pair<pair<triplet, tripl
 				{
 					if (coordinatesi == metal1 && (coordinatesj + j) == prev_pins_coordinates.first && (coordinatesk + k) == prev_pins_coordinates.second)
 					{
-						cout << "FOUND THE SRC PIN!! " << endl;
+						//cout << "FOUND THE SRC PIN!! " << endl;
 						new_prev_pins_coordinates.first = j;
 						new_prev_pins_coordinates.second = k;
 					}
 					if (coordinatesi == metal2 && (coordinatesj + j) == current_pins_coordinates.first && (coordinatesk + k) == current_pins_coordinates.second)
 					{
-						cout << "FOUND THE DEST PIN!! " << endl;
+						//cout << "FOUND THE DEST PIN!! " << endl;
 						new_current_pins_coordinates.first = j;
 						new_current_pins_coordinates.second = k;
 					}
@@ -790,7 +777,7 @@ void  GlobalRouting(ThreeDimensions GlobalGrid, vector <pair<pair<triplet, tripl
 							if (coordinatesi == metal2 && (coordinatesj + i) ==
 								current_pins_coordinates.first && (coordinatesk + x) == current_pins_coordinates.second)
 							{
-								cout << "FOUND THE DEST PIN!! " << endl;
+						//		cout << "FOUND THE DEST PIN!! " << endl;
 								new_current_pins_coordinates.first = pathcoordinates[pathi].first;
 								new_current_pins_coordinates.second = j;
 							}
@@ -812,7 +799,7 @@ void  GlobalRouting(ThreeDimensions GlobalGrid, vector <pair<pair<triplet, tripl
 						{
 							if (coordinatesi == metal2 && (coordinatesj + i) == current_pins_coordinates.first && (coordinatesk + x) == current_pins_coordinates.second)
 							{
-								cout << "FOUND THE DEST PIN!! " << endl;
+						//		cout << "FOUND THE DEST PIN!! " << endl;
 								new_current_pins_coordinates.first = pathcoordinates[pathi].first;
 								new_current_pins_coordinates.second = j;
 							}
@@ -837,7 +824,7 @@ void  GlobalRouting(ThreeDimensions GlobalGrid, vector <pair<pair<triplet, tripl
 						{
 							if (coordinatesi == metal2 && (coordinatesj + i) == current_pins_coordinates.first && (coordinatesk + x) == current_pins_coordinates.second)
 							{
-								cout << "FOUND THE DEST PIN!! " << endl;
+							//	cout << "FOUND THE DEST PIN!! " << endl;
 								new_current_pins_coordinates.first = pathcoordinates[pathi].first;
 								new_current_pins_coordinates.second = k;
 							}
@@ -859,7 +846,7 @@ void  GlobalRouting(ThreeDimensions GlobalGrid, vector <pair<pair<triplet, tripl
 						{
 							if (coordinatesi == metal2 && (coordinatesj + i) == current_pins_coordinates.first && (coordinatesk + x) == current_pins_coordinates.second)
 							{
-								cout << "FOUND THE DEST PIN!! " << endl;
+						//		cout << "FOUND THE DEST PIN!! " << endl;
 								new_current_pins_coordinates.first = pathcoordinates[pathi].first;
 								new_current_pins_coordinates.second = k;
 							}
@@ -888,7 +875,7 @@ void  GlobalRouting(ThreeDimensions GlobalGrid, vector <pair<pair<triplet, tripl
 
 							if (coordinatesi == metal2 && (coordinatesj + y) == current_pins_coordinates.first && (coordinatesk + x) == current_pins_coordinates.second)
 							{
-								cout << "FOUND THE DEST PIN!! " << endl;
+						//		cout << "FOUND THE DEST PIN!! " << endl;
 								new_current_pins_coordinates.first = j;
 								new_current_pins_coordinates.second = k;
 							}
@@ -915,7 +902,7 @@ void  GlobalRouting(ThreeDimensions GlobalGrid, vector <pair<pair<triplet, tripl
 						{
 							if (coordinatesi == metal2 && (coordinatesj + y) == current_pins_coordinates.first && (coordinatesk + x) == current_pins_coordinates.second)
 							{
-								cout << "FOUND THE DEST PIN!! " << endl;
+					//			cout << "FOUND THE DEST PIN!! " << endl;
 								new_current_pins_coordinates.first = j;
 								new_current_pins_coordinates.second = k;
 							}
@@ -930,9 +917,11 @@ void  GlobalRouting(ThreeDimensions GlobalGrid, vector <pair<pair<triplet, tripl
 			}
 			directions.clear();
 			//Start Detailed Routing
-			cout << "DETAILED!!! " << endl;
-			cout << "x src " << new_prev_pins_coordinates.first << " y src " << new_prev_pins_coordinates.second << "\n";
-			cout << "x target" << new_current_pins_coordinates.first << " y target" << new_current_pins_coordinates.second << "\n";
+			if (enable_output) {
+				cout << "DETAILED!!! " << endl;
+				cout << "x src " << new_prev_pins_coordinates.first << " y src " << new_prev_pins_coordinates.second << "\n";
+				cout << "x target" << new_current_pins_coordinates.first << " y target" << new_current_pins_coordinates.second << "\n";
+			}
 
 			int temp_fail = detailed_fail;
 			time_t now = time(0);
@@ -947,10 +936,6 @@ void  GlobalRouting(ThreeDimensions GlobalGrid, vector <pair<pair<triplet, tripl
 			global_detailed = false;
 			tempPath.clear();
 			pathcoordinates.clear();
-			while (!tempstack.empty())
-			{
-				tempstack.pop();
-			}
 			while (!tempstack2.empty())
 			{
 				tempstack2.pop();
@@ -962,54 +947,13 @@ void  GlobalRouting(ThreeDimensions GlobalGrid, vector <pair<pair<triplet, tripl
 			failed_routing_name.push_back(net_name);
 		}
 		int coordinatesi = metal1, coordinatesj = prev_pins_coordinates.first, coordinatesk = prev_pins_coordinates.second;
-		for (int i = 0; i < directions.size(); i++)
-		{
-			if (directions[i] == "SOUTH")
-			{
-				if (coordinatesj + 1 != grid[coordinatesi].size())
-					coordinatesj++;
-				grid[coordinatesi][coordinatesj][coordinatesk] = BLOCKED;
-				actual_coordinates.push(triplet(coordinatesi, coordinatesj, coordinatesk));
-			}
-			if (directions[i] == "NORTH")
-			{
-				coordinatesj--;
-				grid[coordinatesi][coordinatesj][coordinatesk] = BLOCKED;
-				actual_coordinates.push(triplet(coordinatesi, coordinatesj, coordinatesk));
-			}
-			if (directions[i] == "EAST")
-			{
-				if (coordinatesk + 1 != grid[coordinatesi][coordinatesj].size())
-					coordinatesk++;
-				grid[coordinatesi][coordinatesj][coordinatesk] = BLOCKED;
-				actual_coordinates.push(triplet(coordinatesi, coordinatesj, coordinatesk));
-			}
-			if (directions[i] == "WEST")
-			{
-				coordinatesk--;
-				grid[coordinatesi][coordinatesj][coordinatesk] = BLOCKED;
-				actual_coordinates.push(triplet(coordinatesi, coordinatesj, coordinatesk));
-			}
-			if (directions[i] == "UP")
-			{
-
-				coordinatesi++;
-				grid[coordinatesi][coordinatesj][coordinatesk] = BLOCKED;
-				actual_coordinates.push(triplet(coordinatesi, coordinatesj, coordinatesk));
-			}
-			if (directions[i] == "DOWN")
-			{
-				coordinatesi--;
-				grid[coordinatesi][coordinatesj][coordinatesk] = BLOCKED;
-				actual_coordinates.push(triplet(coordinatesi, coordinatesj, coordinatesk));
-			}
-		}
-		directions.clear();
-		cout << "Actual Final Path Coordinates: " << endl;
+		block_grid(grid, directions, coordinatesi, coordinatesj, coordinatesk, true);
+		if (enable_output)
+			cout << "Actual Final Path Coordinates: " << endl;
 		while (!actual_coordinates.empty()) {
 			triplet temp_final = actual_coordinates.top();
-
-			printf("(%d,%d,%d) \n", temp_final.first, temp_final.second, temp_final.third);
+			if (enable_output)
+				printf("(%d,%d,%d) \n", temp_final.first, temp_final.second, temp_final.third);
 			actual_coordinates.pop();
 		}
 
@@ -1038,7 +982,8 @@ int main(int argc, char* argv[])
 
 		myparser.Parse_DEF();
 		myparser.Parse_LEF();
-		myparser.print_output();
+		if (enable_output)
+			myparser.print_output();
 		ThreeDimensions grid;
 		myparser.create_grid(grid);
 		TwoDimensions matrix;
@@ -1057,10 +1002,11 @@ int main(int argc, char* argv[])
 			myvector[n - 1 - i] = temp;
 		}
 		int OutCount = 0;
+
 		GlobalRouting(GlobalMatrix, myvector, grid);
 		cout << " this is global failure " << global_fail << "\n this is detailed failure " << detailed_fail << endl;
 		int nn = failed_routing.size();
-		for (int q = 0; q < failed_routing.size(); ++q) {
+		for (int q = 0; q < failed_routing.size()/3; ++q){
 			//Routing the pins in the priority queue
 			cout << q << endl;
 			net_name = failed_routing_name[q];
@@ -1071,46 +1017,7 @@ int main(int argc, char* argv[])
 			save_time_hour = gmtm->tm_hour;
 			aStarSearch(grid, failed_routing[q].first, failed_routing[q].second, DETAILED);
 			int coordinatesi = failed_routing[q].first.first, coordinatesj = failed_routing[q].first.second, coordinatesk = failed_routing[q].first.third;
-			for (int i = 0; i < directions.size(); i++)
-			{
-				if (directions[i] == "SOUTH")
-				{
-					coordinatesj++;
-					grid[coordinatesi][coordinatesj][coordinatesk] = BLOCKED;
-					actual_coordinates.push(triplet(coordinatesi, coordinatesj, coordinatesk));
-				}
-				if (directions[i] == "NORTH")
-				{
-					coordinatesj--;
-					grid[coordinatesi][coordinatesj][coordinatesk] = BLOCKED;
-					actual_coordinates.push(triplet(coordinatesi, coordinatesj, coordinatesk));
-				}
-				if (directions[i] == "EAST")
-				{
-					coordinatesk++;
-					grid[coordinatesi][coordinatesj][coordinatesk] = BLOCKED;
-					actual_coordinates.push(triplet(coordinatesi, coordinatesj, coordinatesk));
-				}
-				if (directions[i] == "WEST")
-				{
-					coordinatesk--;
-					grid[coordinatesi][coordinatesj][coordinatesk] = BLOCKED;
-					actual_coordinates.push(triplet(coordinatesi, coordinatesj, coordinatesk));
-				}
-				if (directions[i] == "UP")
-				{
-					coordinatesi++;
-					grid[coordinatesi][coordinatesj][coordinatesk] = BLOCKED;
-					actual_coordinates.push(triplet(coordinatesi, coordinatesj, coordinatesk));
-				}
-				if (directions[i] == "DOWN")
-				{
-					coordinatesi--;
-					grid[coordinatesi][coordinatesj][coordinatesk] = BLOCKED;
-					actual_coordinates.push(triplet(coordinatesi, coordinatesj, coordinatesk));
-				}
-			}
-			directions.clear();
+			block_grid(grid, directions, coordinatesi, coordinatesj, coordinatesk, true);
 		}
 		PrintDEF(argv[1]);
 	}

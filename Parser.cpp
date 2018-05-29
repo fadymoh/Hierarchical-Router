@@ -47,39 +47,7 @@ void Parser::print_output()
 		std::cout << '\n';
 	}
 }
-/*mypq_type Parser::order_the_nets()
-{
-auto it = nets.begin();
-mypq_type ordered_nets;
-while (it != nets.end()) {
-float sum = 0;
-std::pair <int, int> current, prev; //first is x-axis and second is y-axis
-for (int x = 0; x < it->second.size(); ++x) {
-int i;
-str temp = it->second[x].first;
-for (i = temp.length() - 1; i >= 0; --i)
-if (temp[i] == '_') break;
-str gate_name = temp.substr(0, i);
 
-for (i = 0; i < components[gate_name].connected_gates[temp].pins_connections.size(); ++i)
-if (components[gate_name].connected_gates[temp].pins_connections[i].first == it->second[x].second) break;
-if (x == 0) {
-current.first = prev.first = components[gate_name].connected_gates[temp].pins_connections[i].second.x;
-current.second = prev.second = components[gate_name].connected_gates[temp].pins_connections[i].second.y;
-}
-else {
-current.first = components[gate_name].connected_gates[temp].pins_connections[i].second.x;
-current.second = components[gate_name].connected_gates[temp].pins_connections[i].second.y;
-sum += sqrt(pow((current.first - prev.first), 2) + pow((current.second - prev.second), 2));
-}
-}
-std::pair<str, float> temp;
-temp = std::make_pair(it->first, sum);
-ordered_nets.push(temp);
-it++;
-}
-return ordered_nets;
-}*/
 mypq_type Parser::order_the_nets()
 {
 	auto it = nets.begin();
@@ -158,8 +126,7 @@ TwoDimensions Parser::makegridlayer(int layer)
 					int x_axis = x + int(it->second.pins_sizes[i].second.x1) / track[layer_string].third;
 					int y_axis = y + int(it->second.pins_sizes[i].second.y1) / track[layer_string].third;
 					if (it->second.pins_sizes[i].first != "gnd" && it->second.pins_sizes[i].first != "vdd") {
-						//if (grid[x_axis][y_axis] == -1)  std::cout << "overwriting\n";
-						//else {
+						
 						grid[x_axis][y_axis] = -1;
 						int j;
 						for (j = 0; j < itz->second.pins_connections.size(); ++j)
@@ -168,7 +135,6 @@ TwoDimensions Parser::makegridlayer(int layer)
 						itz->second.pins_connections[j].second.x = x_axis;
 						itz->second.pins_connections[j].second.y = y_axis;
 						itz->second.pins_connections[j].second.metal_layer = 1;
-						//}
 					}
 				}
 				itz++;
@@ -217,8 +183,8 @@ void Parser::Parse_DEF()
 					while (myvector[0] != "END") {
 						myvector = end_vector(file);
 						if (myvector[0] == "END") break;
-						int x = stoi(myvector[6]) * 1;
-						int y = stoi(myvector[7]) * 1;
+						int x = stoi(myvector[6]);
+						int y = stoi(myvector[7]);
 						gate_info temp;
 						temp.x = x;
 						temp.y = y;
@@ -259,8 +225,8 @@ void Parser::Parse_DEF()
 						else if (myvector[1] == "LAYER")
 							pins[primary_pin].metal_layer = stoi(myvector[2].substr(5));
 						else if (myvector[1] == "PLACED") {
-							pins[primary_pin].x = stoi(myvector[3]) * 1 - xinit;
-							pins[primary_pin].y = stoi(myvector[4]) * 1 - yinit;
+							pins[primary_pin].x = stoi(myvector[3]) - xinit;
+							pins[primary_pin].y = stoi(myvector[4]) - yinit;
 						}
 
 					}
@@ -396,33 +362,20 @@ vector<pair<str, str>> Parser::getNetPairs(str net_name)
 pair<int, int> Parser::getConnectedPinCoordinates(str gate_name, str pin_name, int & metal)
 {
 	pair<int, int> xy;
-	unordered_map<std::string, gate_info> connected_gates_temp;
-	gate_info gate_info_temp;
-	vector<std::pair<std::string, pin_info>> pins_connections_temp;
-	pin_info pin_info_temp;
-	str temp;
-
-	mystruct tempstruct;
-
-	temp = gate_name;
-	int found = temp.find("_");
-	string gate_name_new = temp.erase(found, string::npos);
-
-	tempstruct = components[gate_name_new];
-	connected_gates_temp = tempstruct.connected_gates;
-	gate_info_temp = connected_gates_temp[gate_name];
-	pins_connections_temp = gate_info_temp.pins_connections;
-	for (int i = 0; i < pins_connections_temp.size(); i++)
-	{
-		if (pins_connections_temp[i].first == pin_name)
+	str temp = gate_name;
+	int i;
+	for (i = temp.length() - 1; i >= 0; --i)
+		if (temp[i] == '_') break;
+	temp = temp.substr(0, i);
+	auto it = components[temp].connected_gates[gate_name].pins_connections.begin();
+	while(it!= components[temp].connected_gates[gate_name].pins_connections.end()){
+		if (it->first == pin_name)
 		{
-			pin_info_temp = pins_connections_temp[i].second;
-			//connected_pin = pin_info_temp.connected_pin;
-			xy.first = pin_info_temp.x;
-			xy.second = pin_info_temp.y;
-			//metal = pin_info_temp.metal_layer;
+			xy.first = it->second.x;
+			xy.second = it->second.y;
 			metal = 1;
 		}
+		it++;
 	}
 	return xy;
 }
