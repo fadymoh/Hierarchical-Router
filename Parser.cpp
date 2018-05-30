@@ -72,15 +72,15 @@ mypq_type Parser::order_the_nets()
 				current.first = prev.first = components[gate_name].connected_gates[temp].pins_connections[i].second.x;
 				current.second = prev.second = components[gate_name].connected_gates[temp].pins_connections[i].second.y;
 				if (IsPrimary(it->first)) {
-					pair<int, int> temp_pair = getPrimaryPinCoordinates(it->first, metal_1);
+					std::pair<int, int> temp_pair = getPrimaryPinCoordinates(it->first, metal_1);
 					triplet temp_trip;
 					temp_trip.first = temp_pair.first;
 					temp_trip.second = temp_pair.second;
 					temp_trip.third = metal_1;
 					current.third = metal_2;
-					pair<triplet, triplet> mytriplet = make_pair(temp_trip, current);
+					std::pair<triplet, triplet> mytriplet = std::make_pair(temp_trip, current);
 					float temp = sqrt(pow((current.first - temp_trip.first), 2) + pow((current.second - temp_trip.second), 2));
-					pair <float, string> second_pair = make_pair(temp, it->first);
+					std::pair <float, str> second_pair = make_pair(temp, it->first);
 					return_PQ.push(make_pair(mytriplet, second_pair));
 					metal_1 = 1;
 				}
@@ -93,8 +93,8 @@ mypq_type Parser::order_the_nets()
 				prev.third = metal_2;
 				float temp = sqrt(pow((current.first - prev.first), 2) + pow((current.second - prev.second), 2));
 
-				pair <triplet, triplet> mytriplet = make_pair(current, prev);
-				pair <float, string> second_pair = make_pair(temp, it->first);
+				std::pair <triplet, triplet> mytriplet = std::make_pair(current, prev);
+				std::pair <float, str> second_pair = make_pair(temp, it->first);
 				return_PQ.push(make_pair(mytriplet, second_pair));
 				prev = current;
 
@@ -258,8 +258,8 @@ void Parser::Parse_LEF()
 							start = false;
 							myvector = end_vector(lef);
 							if (myvector[0] == "SIZE") {
-								components[gate_name].size_x = stof(myvector[1]) * 100;
-								components[gate_name].size_y = stof(myvector[3]) * 100;
+								components[gate_name].size_x = stof(myvector[1]);
+								components[gate_name].size_y = stof(myvector[3]);
 							}
 							else if (myvector[0] == "PIN") {
 								pin = myvector[1];
@@ -354,14 +354,14 @@ std::unordered_map<str, std::vector<std::pair<str, str>>> Parser::getNets()
 }
 
 
-vector<pair<str, str>> Parser::getNetPairs(str net_name)
+std::vector<std::pair<str, str>> Parser::getNetPairs(str net_name)
 {
 	return nets[net_name];
 }
 
-pair<int, int> Parser::getConnectedPinCoordinates(str gate_name, str pin_name, int & metal)
+std::pair<int, int> Parser::getConnectedPinCoordinates(str gate_name, str pin_name, int & metal)
 {
-	pair<int, int> xy;
+	std::pair<int, int> xy;
 	str temp = gate_name;
 	int i;
 	for (i = temp.length() - 1; i >= 0; --i)
@@ -392,9 +392,9 @@ bool Parser::IsPrimary(str pin_name)
 
 }
 
-pair<int, int> Parser::getPrimaryPinCoordinates(str pin_name, int& metal)
+std::pair<int, int> Parser::getPrimaryPinCoordinates(str pin_name, int& metal)
 {
-	pair<int, int> xy;
+	std::pair<int, int> xy;
 	xy.first = pins[pin_name].x / (get_track_step(pins[pin_name].metal_layer));
 	xy.second = pins[pin_name].y / (get_track_step(pins[pin_name].metal_layer));
 	metal = pins[pin_name].metal_layer;
@@ -402,6 +402,6 @@ pair<int, int> Parser::getPrimaryPinCoordinates(str pin_name, int& metal)
 }
 int Parser::get_track_step(int metal_layer)
 {
-	string metal = "metal" + to_string(metal_layer);
+	str metal = "metal" + std::to_string(metal_layer);
 	return track[metal].third;
 }

@@ -7,10 +7,10 @@
 #include <functional>
 #include <utility>
 
-using namespace std;
+//using namespace std;
 typedef std::string str;
-typedef pair<int, int> p;
-typedef pair<int, pair<int, int>> pp;
+typedef std::pair<int, int> p;
+typedef std::pair<int, std::pair<int, int>> pp;
 
 struct cell {
 	int parent_i, parent_j, parent_k;
@@ -46,7 +46,8 @@ public:
 	{
 		reverse = revparam;
 	}
-	bool operator() (const std::pair<pair<triplet, triplet>, pair<float, string>> & lhs, const std::pair<pair<triplet, triplet>, pair<float, string>> &rhs) const
+	bool operator() (const std::pair<std::pair<triplet, triplet>, std::pair<float, str>> & lhs, const std::pair<std::pair<triplet, triplet>,
+		std::pair<float, str>> &rhs) const
 	{
 		if (reverse) return (lhs.second.first>rhs.second.first);
 		else return (lhs.second.first<rhs.second.first);
@@ -72,7 +73,8 @@ struct search_node {
 
 };
 
-typedef std::priority_queue<std::pair<pair<triplet, triplet>, pair<float, string>>, std::vector<std::pair<pair<triplet, triplet>, pair<float, string>>>, mycomparison> mypq_type;
+typedef std::priority_queue<std::pair<std::pair<triplet, triplet>, std::pair<float, str>>, std::vector<std::pair<std::pair<triplet, triplet>,
+	std::pair<float, str>>>, mycomparison> mypq_type;
 typedef std::vector<int> OneDimension;
 
 

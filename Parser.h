@@ -36,9 +36,9 @@ public:
 	void Parse_DEF();
 	void Parse_LEF();
 	void create_grid(ThreeDimensions &);
-	vector<pair<str, str>> getNetPairs(str);
-	pair<int, int> getConnectedPinCoordinates(str, str, int&);
-	pair<int, int> getPrimaryPinCoordinates(str, int&);
+	std::vector<std::pair<str, str>> getNetPairs(str);
+	std::pair<int, int> getConnectedPinCoordinates(str, str, int&);
+	std::pair<int, int> getPrimaryPinCoordinates(str, int&);
 	bool IsPrimary(str);
 	int get_track_step(int);
 	~Parser();
