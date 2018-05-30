@@ -16,7 +16,7 @@ Current limitations: 1) Rip & Reroute has to be implemented.
                      6) Making the code more Object-Oriented.
                      
 Build Commands: g++ Source.cpp Parser.cpp -std=c++11
-Command line args: Def_file Lef_file Gbox Congestion
-Example:           bcd.def  osu035.lef  5   50
+Command line args: Def_file Lef_file Gbox Congestion enable_output
+Example:           bcd.def  osu035.lef  5   50  1
 
 If you have any comments, feel free to message me at fadyabuelmagd@gmail.com
