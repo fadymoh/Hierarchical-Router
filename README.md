@@ -1,5 +1,5 @@
 # Hierarchical Router
-This project was a group project done by me, Hassan Osama Kandil, Omar Elsaedawy, and Ahmed Elrouby.
+This project was a group project done by me, Hassan Osama Kandil, Omar ElSeadawy, and Ahmed Elrouby.
 This is a hierarchical router that uses A* search algorithm to route given pairs of nets.
 
 The routing starts by parsing the given DEF & LEF files using unordered_maps (Hash Tables), to map the gates and their pin locations to the given die and divide the grid using the tracks found inside the DEF file.
