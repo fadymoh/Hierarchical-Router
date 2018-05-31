@@ -19,8 +19,8 @@
 const int UNBLOCKED = 0;
 const int BLOCKED = -1;
 const int SHARED = -2;
-int GBOXsize = 10;
-int congestion = 150;
+int GBOXsize = 5;
+int congestion = 50;
 int enable_output = 0;
 int time_out_counter;
 int save_time_min, save_time_hour;
@@ -111,7 +111,7 @@ void create_output(triplet &p, int &counter, int &startx, int &starty, int &endx
 		endy = starty = p.third*myparser.get_track_step(p.first);
 		currentlayer = p.first;
 	}
-	if ((currentlayer != p.first) || ((Path.empty()) && mode == true) || (actual_coordinates.empty() && mode == false ))
+	if ((currentlayer != p.first) || ((Path.empty()) && mode == true) || (actual_coordinates.empty() && mode == false))
 	{
 		part1 = " ( " + std::to_string(startx) + " " + std::to_string(starty) + " ) ";
 		if ((startx == endx) && (starty == endy))
@@ -255,10 +255,10 @@ bool isUnBlocked(ThreeDimensions& Grid, triplet p, ThreeDimensionsCell& celldeta
 //   - (Z) SIZE FOR THIRD DIMENSION FOR GRID
 //
 
-bool isValid(triplet c, int x, int y, int z)
+bool isValid(triplet c, ThreeDimensions &Grid)
 {
 	int xx = c.first, yy = c.second, zz = c.third;
-	return (xx <= x - 1 && xx >= 1) && (yy < y && yy >= 0) && (zz < z && zz >= 0);
+	return (xx <= Grid.size() - 1 && xx >= 1) && (yy < Grid[xx].size() && yy >= 0) && (zz < Grid[xx][yy].size() && zz >= 0);
 }
 
 
@@ -289,7 +289,7 @@ str find_place(int delta_i, int delta_j, int delta_k) {
 void tracePath(std::vector<std::vector<std::vector<cell>>>& cellDetails, triplet dest, ThreeDimensions& Grid, bool mode)
 {
 	if (enable_output)
-	printf("\nThe Path is \n");
+		printf("\nThe Path is \n");
 	int i = dest.first;
 	int j = dest.second;
 	int k = dest.third;
@@ -328,10 +328,10 @@ void tracePath(std::vector<std::vector<std::vector<cell>>>& cellDetails, triplet
 		triplet p = Path.top();
 		Path.pop();
 		if (enable_output)
-		printf("(%d,%d,%d) \n", p.first, p.second*myparser.get_track_step(p.first), p.third*myparser.get_track_step(p.first));
+			printf("(%d,%d,%d) \n", p.first, p.second*myparser.get_track_step(p.first), p.third*myparser.get_track_step(p.first));
 		if (mode == DETAILED && !global_detailed)
 		{
-			create_output(p, counter,startx, starty, endx, endy, currentlayer, prevlayer, str_route, part1, part2, viapart, true);
+			create_output(p, counter, startx, starty, endx, endy, currentlayer, prevlayer, str_route, part1, part2, viapart, true);
 			endx = p.second*myparser.get_track_step(p.first);
 			endy = p.third*myparser.get_track_step(p.first);
 			counter++;
@@ -345,8 +345,8 @@ void tracePath(std::vector<std::vector<std::vector<cell>>>& cellDetails, triplet
 			else if (mode == GLOBAL) // IF GLOBAL ROUTING
 				Grid[p.first][p.second][p.third]++;
 		}
-
-	
+		if (mode == GLOBAL)
+		counter++;
 	}
 
 	//cout << "Path in Moves: " << endl;
@@ -360,7 +360,7 @@ void tracePath(std::vector<std::vector<std::vector<cell>>>& cellDetails, triplet
 		int counter = 0, total_size = actual_path.size();
 
 		int coordinatesi = metal_temp, coordinatesj = prev_pins_coordinates_temp.first, coordinatesk = prev_pins_coordinates_temp.second;
-		block_grid(Grid, directions,coordinatesi, coordinatesj, coordinatesk, false);
+		block_grid(Grid, directions, coordinatesi, coordinatesj, coordinatesk, false);
 		if (enable_output)
 			std::cout << "Actual Final Path Coordinates: " << '\n';
 		while (!actual_coordinates.empty()) {
@@ -385,10 +385,11 @@ bool generate_and_check_dest(triplet new_node, triplet parent_node, std::vector<
 	double newG, newH, newF;
 
 	// Only process this cell if this is a valid one
-	if (isValid(new_node, grid_size.first, grid_size.second, grid_size.third) == true)
+	if (isValid(new_node, Grid) == true)
 	{
 		// If the destination cell is the same as the
 		// current successor
+
 		if (isDestination(new_node, destination_node) == true)
 		{
 			// Set the Parent of the destination cell
@@ -396,7 +397,7 @@ bool generate_and_check_dest(triplet new_node, triplet parent_node, std::vector<
 			cellDetails[new_node.first][new_node.second][new_node.third].parent_j = parent_node.second;
 			cellDetails[new_node.first][new_node.second][new_node.third].parent_k = parent_node.third;
 			if (enable_output)
-					printf("The destination cell is found\n");
+				printf("The destination cell is found\n");
 			tracePath(cellDetails, destination_node, Grid, mode);
 			return true;
 		}
@@ -636,7 +637,7 @@ void  GlobalRouting(ThreeDimensions GlobalGrid, std::vector <std::pair<std::pair
 	int OutCount = 0;
 	ThreeDimensions tempPath;
 
-	for (int q = 0; q < nets.size(); ++q){
+	for (int q = 0; q < nets.size(); ++q) {
 		std::pair<int, int> new_prev_pins_coordinates, new_current_pins_coordinates;
 
 		std::cout << ++OutCount << '\n';
@@ -650,42 +651,57 @@ void  GlobalRouting(ThreeDimensions GlobalGrid, std::vector <std::pair<std::pair
 		triplet globalsrc = triplet(metal1, (prev_pins_coordinates.first / GBOXsize), (prev_pins_coordinates.second / GBOXsize));
 		triplet globaltarget = triplet(metal2, (current_pins_coordinates.first / GBOXsize), (current_pins_coordinates.second / GBOXsize));
 		if (enable_output) {
-			std::cout << "Src:  ( " << metal1 << ", " << (prev_pins_coordinates.first / GBOXsize) << ", " << (prev_pins_coordinates.second / GBOXsize) << ")\n";
-			std::cout << "Dest:  ( " << metal2 << ", " << (current_pins_coordinates.first / GBOXsize) << ", " << (current_pins_coordinates.second / GBOXsize) << ")\n";
+			std::cout << "Src:  ( " << metal1 << ", " << globalsrc.second << ", " << globalsrc.third << ")\n";
+			std::cout << "Dest:  ( " << metal2 << ", " << globaltarget.second << ", " << globaltarget.third << ")\n";
 		}
 		int temp_global = global_fail;
 		bool flag_global = false;
 		if (globalsrc.first != globaltarget.first || globalsrc.second != globaltarget.second || globalsrc.third != globaltarget.third)
 		{
-			aStarSearch(GlobalGrid, (triplet(metal1, (prev_pins_coordinates.first / GBOXsize), (prev_pins_coordinates.second / GBOXsize))), 
-				triplet(metal2, (current_pins_coordinates.first / GBOXsize), (current_pins_coordinates.second / GBOXsize)), GLOBAL);
+
+			aStarSearch(GlobalGrid, globalsrc, globaltarget, GLOBAL);
 			flag_global = true;
 		}
 		else
 		{
 			save_time();
 			ThreeDimensions my3dPath;
-			my3dPath.resize(2);
-			my3dPath[1].resize(GBOXsize);
-			for (int x_axis = 0; x_axis < GBOXsize; ++x_axis)
-			{
-				my3dPath[1][x_axis].resize(GBOXsize);
-			}
+
 			triplet mysrc, mydest;
 			mysrc = triplet(metal1, prev_pins_coordinates.first % GBOXsize, prev_pins_coordinates.second %GBOXsize);
 			mydest = triplet(metal2, current_pins_coordinates.first % GBOXsize, current_pins_coordinates.second % GBOXsize);
-			int start_box_x = grid[1].size() / GBOXsize, start_box_y = grid[1][start_box_x].size() / GBOXsize;
-			for (int x_axis = 0; x_axis <  GBOXsize; ++x_axis)
+			int start_box_x = prev_pins_coordinates.first / GBOXsize, start_box_y = prev_pins_coordinates.second / GBOXsize;
+			int my_final_x_dimension = GBOXsize;
+			int my_final_y_dimension = GBOXsize;
+			if (start_box_x * GBOXsize + GBOXsize > grid[1].size())
+				my_final_x_dimension = grid[1].size() - start_box_x * GBOXsize;
+			if (start_box_y * GBOXsize + GBOXsize > grid[1][start_box_y*GBOXsize].size())
+				my_final_y_dimension = grid[1][start_box_y * GBOXsize].size();
+			my3dPath.resize(3);
+			for (int i_dimension = 1; i_dimension < 3; ++i_dimension)
 			{
-				for (int y_axis = 0; y_axis <GBOXsize; ++y_axis)
+				my3dPath[i_dimension].resize(my_final_x_dimension);
+				for (int x_axis = 0; x_axis < my_final_x_dimension; ++x_axis)
+					my3dPath[i_dimension][x_axis].resize(my_final_y_dimension);
+			}
+
+			for (int i_dimension = 1; i_dimension < 3; ++i_dimension)
+			{
+				for (int x_axis = 0; x_axis < my_final_x_dimension; ++x_axis)
 				{
-					my3dPath[1][x_axis][y_axis] = grid[1][start_box_x * GBOXsize + x_axis][start_box_y * GBOXsize + y_axis];
+					for (int y_axis = 0; y_axis < my_final_y_dimension; ++y_axis)
+					{
+						my3dPath[i_dimension][x_axis][y_axis] = grid[i_dimension][start_box_x * GBOXsize + x_axis][start_box_y * GBOXsize + y_axis];
+					}
 				}
 			}
+			global_detailed = true;
+			prev_pins_coordinates_temp = prev_pins_coordinates;
+			metal_temp = metal1;
 			aStarSearch(my3dPath, mysrc, mydest, DETAILED);
 			int coordinatesi = metal1, coordinatesj = prev_pins_coordinates.first, coordinatesk = prev_pins_coordinates.second;
 			block_grid(grid, directions, coordinatesi, coordinatesj, coordinatesk, true);
-			
+			global_detailed = false;
 		}
 		if (enable_output)
 			std::cout << "Src:  ( " << metal1 << ", " << (prev_pins_coordinates.first / GBOXsize) << ", " << (prev_pins_coordinates.second / GBOXsize) << ")\n";
@@ -761,7 +777,7 @@ void  GlobalRouting(ThreeDimensions GlobalGrid, std::vector <std::pair<std::pair
 						new_current_pins_coordinates.first = j;
 						new_current_pins_coordinates.second = k;
 					}
-					if (coordinatesj + j < grid[coordinatesi].size())
+					if (coordinatesj + j < grid[coordinatesi].size() && coordinatesk + k < grid[coordinatesi][coordinatesj+j].size())
 						tempPath[pathi][j][k] = grid[coordinatesi][coordinatesj + j][coordinatesk + k];
 				}
 			}
@@ -781,7 +797,7 @@ void  GlobalRouting(ThreeDimensions GlobalGrid, std::vector <std::pair<std::pair
 							if (coordinatesi == metal2 && (coordinatesj + i) ==
 								current_pins_coordinates.first && (coordinatesk + x) == current_pins_coordinates.second)
 							{
-						//		cout << "FOUND THE DEST PIN!! " << endl;
+								//		cout << "FOUND THE DEST PIN!! " << endl;
 								new_current_pins_coordinates.first = pathcoordinates[pathi].first;
 								new_current_pins_coordinates.second = j;
 							}
@@ -803,7 +819,7 @@ void  GlobalRouting(ThreeDimensions GlobalGrid, std::vector <std::pair<std::pair
 						{
 							if (coordinatesi == metal2 && (coordinatesj + i) == current_pins_coordinates.first && (coordinatesk + x) == current_pins_coordinates.second)
 							{
-						//		cout << "FOUND THE DEST PIN!! " << endl;
+								//		cout << "FOUND THE DEST PIN!! " << endl;
 								new_current_pins_coordinates.first = pathcoordinates[pathi].first;
 								new_current_pins_coordinates.second = j;
 							}
@@ -828,7 +844,7 @@ void  GlobalRouting(ThreeDimensions GlobalGrid, std::vector <std::pair<std::pair
 						{
 							if (coordinatesi == metal2 && (coordinatesj + i) == current_pins_coordinates.first && (coordinatesk + x) == current_pins_coordinates.second)
 							{
-							//	cout << "FOUND THE DEST PIN!! " << endl;
+								//	cout << "FOUND THE DEST PIN!! " << endl;
 								new_current_pins_coordinates.first = pathcoordinates[pathi].first;
 								new_current_pins_coordinates.second = k;
 							}
@@ -850,7 +866,7 @@ void  GlobalRouting(ThreeDimensions GlobalGrid, std::vector <std::pair<std::pair
 						{
 							if (coordinatesi == metal2 && (coordinatesj + i) == current_pins_coordinates.first && (coordinatesk + x) == current_pins_coordinates.second)
 							{
-						//		cout << "FOUND THE DEST PIN!! " << endl;
+								//		cout << "FOUND THE DEST PIN!! " << endl;
 								new_current_pins_coordinates.first = pathcoordinates[pathi].first;
 								new_current_pins_coordinates.second = k;
 							}
@@ -878,7 +894,7 @@ void  GlobalRouting(ThreeDimensions GlobalGrid, std::vector <std::pair<std::pair
 						{
 							if (coordinatesi == metal2 && (coordinatesj + y) == current_pins_coordinates.first && (coordinatesk + x) == current_pins_coordinates.second)
 							{
-						//		cout << "FOUND THE DEST PIN!! " << endl;
+								//		cout << "FOUND THE DEST PIN!! " << endl;
 								new_current_pins_coordinates.first = j;
 								new_current_pins_coordinates.second = k;
 							}
@@ -905,10 +921,11 @@ void  GlobalRouting(ThreeDimensions GlobalGrid, std::vector <std::pair<std::pair
 						{
 							if (coordinatesi == metal2 && (coordinatesj + y) == current_pins_coordinates.first && (coordinatesk + x) == current_pins_coordinates.second)
 							{
-					//			cout << "FOUND THE DEST PIN!! " << endl;
+								//			cout << "FOUND THE DEST PIN!! " << endl;
 								new_current_pins_coordinates.first = j;
 								new_current_pins_coordinates.second = k;
 							}
+							if (coordinatesj+y < grid[coordinatesi].size() && coordinatesk + x < grid[coordinatesi][coordinatesj+y].size())
 							tempPath[pathi][j][k] = grid[coordinatesi][coordinatesj + y][coordinatesk + x];
 							x++;
 						}
@@ -927,7 +944,7 @@ void  GlobalRouting(ThreeDimensions GlobalGrid, std::vector <std::pair<std::pair
 			}
 
 			int temp_fail = detailed_fail;
-		
+
 			global_detailed = true;
 			prev_pins_coordinates_temp = prev_pins_coordinates;
 			metal_temp = metal1;
@@ -939,10 +956,11 @@ void  GlobalRouting(ThreeDimensions GlobalGrid, std::vector <std::pair<std::pair
 			pathcoordinates.clear();
 			while (!tempstack2.empty()) tempstack2.pop();
 		}
-		else if (flag_global){
-			failed_routing.push_back(std::make_pair(triplet(metal1, prev_pins_coordinates.first, prev_pins_coordinates.second),
+		else if (flag_global) {
+ 			failed_routing.push_back(std::make_pair(triplet(metal1, prev_pins_coordinates.first, prev_pins_coordinates.second),
 				triplet(metal2, current_pins_coordinates.first, current_pins_coordinates.second)));
 			failed_routing_name.push_back(net_name);
+
 		}
 		int coordinatesi = metal1, coordinatesj = prev_pins_coordinates.first, coordinatesk = prev_pins_coordinates.second;
 		block_grid(grid, directions, coordinatesi, coordinatesj, coordinatesk, true);
@@ -971,12 +989,14 @@ int main(int argc, char* argv[])
 		std::cout << " Wrong number of input \n";
 		return EXIT_FAILURE;
 	}
-	else{
+	else {
 		myparser.set_def(argv[1]);
 		myparser.set_lef(argv[2]);
 		GBOXsize = std::stoi(argv[3]);
 		congestion = std::stoi(argv[4]);
 		enable_output = std::stoi(argv[5]);
+//	myparser.set_def("cpu_unroute.def");
+//	myparser.set_lef("osu035.lef");
 		myparser.Parse_DEF();
 		myparser.Parse_LEF();
 		if (enable_output)
@@ -999,18 +1019,16 @@ int main(int argc, char* argv[])
 			myvector[n - 1 - i] = temp;
 		}
 		GlobalRouting(GlobalMatrix, myvector, grid);
-		std::cout << " this is global failure " << global_fail << "\n this is detailed failure " << detailed_fail << '\n';
-		std::cout << "THIS IS THE SIZE OF FAILED_ROUTING " << failed_routing.size() << '\n';
-		for (int q = 0; q < failed_routing.size(); ++q)
+		myvector.clear();
+		for (int i = 0; i < failed_routing.size(); ++i)
 		{
-			net_name = failed_routing_name[q];
-			std::cout << q << '\n';
-			save_time();
-			aStarSearch(grid, failed_routing[q].first, failed_routing[q].second, DETAILED);
-			int coordinatesi = failed_routing[q].first.first, coordinatesj = failed_routing[q].first.second, coordinatesk = failed_routing[q].first.third;
-			block_grid(grid, directions, coordinatesi, coordinatesj, coordinatesk, true);
+			myvector.push_back(std::make_pair(std::make_pair(failed_routing[i].first, failed_routing[i].second), std::make_pair(0, failed_routing_name[i])));
 		}
-		PrintDEF(argv[1]);
+	//	std::cout << "take 2\n\n";
+	//	GlobalRouting(GlobalMatrix, myvector, grid);
+		std::cout << " this is global failure " << global_fail << "\n this is detailed failure " << detailed_fail << '\n';
+	//	std::cout << " THIS IS THE SIZE OF FAILED_ROUTING " << failed_routing.size() << '\n';
+		PrintDEF("cpu_unroute.def");
 	}
 	system("pause");
 	return 0;

@@ -323,8 +323,8 @@ void Parser::create_grid(ThreeDimensions &x)
 	x.resize(5);
 	for (int i = 1; i < 5; ++i) {
 		str layer_string = "metal" + std::to_string(i);
-		y_dimension = yfinal / track[layer_string].third + 110;
-		x_dimension = xfinal / track[layer_string].third + 110;
+		y_dimension = yfinal / track[layer_string].third + 1;
+		x_dimension = xfinal / track[layer_string].third + 1;
 		x[i].resize(x_dimension);
 		for (int j = 0; j < x_dimension; ++j)
 			x[i][j].resize(y_dimension);
