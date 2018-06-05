@@ -9,12 +9,10 @@ The program is able to route 6000 nets in 5 mins and prints the output routed DE
 It is an open source, so anyone can take the code and optimize, improve, and add on it. Just give a star :)
 
 Current limitations: 1) Rip & Reroute has to be implemented.
-                     2) Global Routing needs to be improved as A* algorithm does not take two pins on the same Gbox as the src & dest are                           the same.
-                     3) Current congestion control is a counter on each Gbox that if exceeded, that Gbox becomes blocked.
-                     4) Need to take all the rects of each pin into account, as when a pin fails to route from one rect, the other has to                           be taken into account.
-                     5) The obstacles of all the cells has to be taken into account.
-                     6) Making the code more Object-Oriented.
-                     7) Collapse the layers on each other.
+                     2) Need to take all the rects of each pin into account, as when a pin fails to route from one rect, the other has to                           be taken into account.
+                     3) The obstacles of all the cells has to be taken into account.
+                     4) Making the code more Object-Oriented.
+                     5) Collapse the layers on each other.
                      
 Build Commands: g++ Source.cpp Parser.cpp -std=c++11
 Command line args: Def_file Lef_file Gbox Congestion enable_output
