@@ -17,7 +17,7 @@ private:
 																	//first element is the gate name and the second is the connected pin
 	float site_width, row_height;
 	str pin_name, input_file, output_file, lef_file;
-	int x_dimension, y_dimension, Units_distance, xinit, xfinal, yinit, yfinal;
+	int x_dimension, y_dimension, Units_distance, xinit, xfinal, yinit, yfinal, final_step_x, final_step_y;
 	std::ifstream file, lef;
 	char arr[400];
 	std::vector<std::string> split(const char *, char);
@@ -40,7 +40,8 @@ public:
 	std::pair<int, int> getConnectedPinCoordinates(str, str, int&);
 	std::pair<int, int> getPrimaryPinCoordinates(str, int&);
 	bool IsPrimary(str);
-	int get_track_step(int);
+	int get_track_step_x();
+	int get_track_step_y();
 	~Parser();
 };
 

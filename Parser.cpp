@@ -1,5 +1,8 @@
 #include "Parser.h"
 #include <vector>
+unsigned int gcd(unsigned int n1, unsigned int n2) {
+	return (n2 == 0) ? n1 : gcd(n2, n1 % n2);
+}
 std::vector<std::string> Parser::split(const char *str, char c = ' ')
 {
 	std::vector<std::string> result;
@@ -120,13 +123,13 @@ TwoDimensions Parser::makegridlayer(int layer)
 		while (it != components.end()) {
 			auto itz = it->second.connected_gates.begin();
 			while (itz != it->second.connected_gates.end()) {
-				int x = itz->second.x / track[layer_string].third;
-				int y = itz->second.y / track[layer_string].third;
+				int x = itz->second.x / final_step_x;
+				int y = itz->second.y / final_step_y;
 				for (int i = 0; i < it->second.pins_sizes.size(); ++i) {
-					int x_axis = x + int(it->second.pins_sizes[i].second.x1) / track[layer_string].third;
-					int y_axis = y + int(it->second.pins_sizes[i].second.y1) / track[layer_string].third;
+					int x_axis = x + int(it->second.pins_sizes[i].second.x1) / final_step_x;
+					int y_axis = y + int(it->second.pins_sizes[i].second.y1) / final_step_y;
 					if (it->second.pins_sizes[i].first != "gnd" && it->second.pins_sizes[i].first != "vdd") {
-						
+
 						grid[x_axis][y_axis] = -1;
 						int j;
 						for (j = 0; j < itz->second.pins_connections.size(); ++j)
@@ -145,8 +148,8 @@ TwoDimensions Parser::makegridlayer(int layer)
 		auto it = pins.begin();
 		while (it != pins.end()) {
 			if (it->second.metal_layer == layer) {
-				int x = it->second.x / track[layer_string].third;
-				int y = it->second.y / track[layer_string].third;
+				int x = it->second.x / final_step_x;
+				int y = it->second.y / final_step_y;
 				if (grid[x][y] == -1) std::cout << "overwriting\n";
 				else grid[x][y] = -1;
 			}
@@ -321,15 +324,66 @@ void Parser::Parse_LEF()
 void Parser::create_grid(ThreeDimensions &x)
 {
 	x.resize(5);
-	for (int i = 1; i < 5; ++i) {
+	int current_x = -1 , current_y = -1;
+	for (int i = 1; i < track.size(); ++i)
+	{
 		str layer_string = "metal" + std::to_string(i);
-		y_dimension = yfinal / track[layer_string].third + 1;
-		x_dimension = xfinal / track[layer_string].third + 1;
+		if (track[layer_string].orientation == 'X')
+		{
+			if (current_x == -1)
+				current_x = track[layer_string].third;
+			else
+				current_x = gcd(current_x, track[layer_string].third);
+		}
+		else if (track[layer_string].orientation == 'Y')
+		{
+			if (current_y == -1)
+				current_y = track[layer_string].third;
+			else
+				current_y = gcd(current_y, track[layer_string].third);
+		}
+	}
+
+	final_step_x = current_x;
+	final_step_y = current_y;
+	for (int i = 1; i < track.size() + 1; ++i) {
+		str layer_string = "metal" + std::to_string(i);
+		y_dimension = yfinal / current_y +1;
+		x_dimension = xfinal / current_x +1;
 		x[i].resize(x_dimension);
 		for (int j = 0; j < x_dimension; ++j)
 			x[i][j].resize(y_dimension);
 		x[i] = makegridlayer(i);
 	}
+	for (int i = 1; i < track.size() + 1; ++i)
+	{
+		str layer_string = "metal" + std::to_string(i);
+		if (track[layer_string].orientation == 'X')
+		{
+			if (track[layer_string].third != final_step_x)
+			{
+				int skip = track[layer_string].third / final_step_x;
+				for (int x_axis = 0; x_axis < x_dimension; x_axis += skip)
+				{
+					for (int y_axis = 0; y_axis < x[i][x_axis].size(); ++y_axis)
+						x[i][x_axis][y_axis] = -1;
+				}
+			}
+		}
+		else if (track[layer_string].orientation == 'Y')
+		{
+			if (track[layer_string].third != final_step_y)
+			{
+				int skip = track[layer_string].third / final_step_y;
+				for (int y_axis = 0; y_axis < y_dimension; y_axis += skip)
+				{
+					for (int x_axis = 0; x_axis < x[i].size(); ++x_axis)
+						x[i][x_axis][y_axis] = -1;
+				}
+			}
+		}
+	}
+
 }
 void Parser::getGridDimensions(int& x, int &y) {
 	x = x_dimension;
@@ -368,7 +422,7 @@ std::pair<int, int> Parser::getConnectedPinCoordinates(str gate_name, str pin_na
 		if (temp[i] == '_') break;
 	temp = temp.substr(0, i);
 	auto it = components[temp].connected_gates[gate_name].pins_connections.begin();
-	while(it!= components[temp].connected_gates[gate_name].pins_connections.end()){
+	while (it != components[temp].connected_gates[gate_name].pins_connections.end()) {
 		if (it->first == pin_name)
 		{
 			xy.first = it->second.x;
@@ -395,13 +449,16 @@ bool Parser::IsPrimary(str pin_name)
 std::pair<int, int> Parser::getPrimaryPinCoordinates(str pin_name, int& metal)
 {
 	std::pair<int, int> xy;
-	xy.first = pins[pin_name].x / (get_track_step(pins[pin_name].metal_layer));
-	xy.second = pins[pin_name].y / (get_track_step(pins[pin_name].metal_layer));
+	xy.first = pins[pin_name].x / (final_step_x);
+	xy.second = pins[pin_name].y / (final_step_y);
 	metal = pins[pin_name].metal_layer;
 	return xy;
 }
-int Parser::get_track_step(int metal_layer)
+int Parser::get_track_step_x()
 {
-	str metal = "metal" + std::to_string(metal_layer);
-	return track[metal].third;
+	return final_step_x;
+}
+int Parser::get_track_step_y()
+{
+	return final_step_y;
 }

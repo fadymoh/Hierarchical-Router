@@ -1,4 +1,4 @@
-#define _CRT_SECURE_NO_WARNINGS
+﻿#define _CRT_SECURE_NO_WARNINGS
 
 #include "Parser.h"
 #include <iostream>
@@ -9,9 +9,10 @@
 #include <limits>
 #include <cstddef>
 #include <vector>
-#include<algorithm>
+#include <algorithm>
 #include <functional>
 #include <cfloat>
+#include "flute.c"
 //using namespace std;
 #define GLOBAL 1
 #define DETAILED 0
@@ -107,8 +108,8 @@ void create_output(triplet &p, int &counter, int &startx, int &starty, int &endx
 {
 	if (!counter)
 	{
-		endx = startx = p.second*myparser.get_track_step(p.first);
-		endy = starty = p.third*myparser.get_track_step(p.first);
+		endx = startx = p.second*myparser.get_track_step_x();
+		endy = starty = p.third*myparser.get_track_step_y();
 		currentlayer = p.first;
 	}
 	if ((currentlayer != p.first) || ((Path.empty()) && mode == true) || (actual_coordinates.empty() && mode == false))
@@ -137,8 +138,8 @@ void create_output(triplet &p, int &counter, int &startx, int &starty, int &endx
 		str_route = "metal" + std::to_string(currentlayer) + part1 + part2 + viapart;
 		DEFRoute[net_name].push_back(str_route);
 		currentlayer = p.first;
-		startx = p.second*myparser.get_track_step(p.first);
-		starty = p.third*myparser.get_track_step(p.first);
+		startx = p.second*myparser.get_track_step_x();
+		starty = p.third*myparser.get_track_step_y();
 	}
 }
 void PrintDEF(str filename)
@@ -328,12 +329,12 @@ void tracePath(std::vector<std::vector<std::vector<cell>>>& cellDetails, triplet
 		triplet p = Path.top();
 		Path.pop();
 		if (enable_output)
-			printf("(%d,%d,%d) \n", p.first, p.second*myparser.get_track_step(p.first), p.third*myparser.get_track_step(p.first));
+			printf("(%d,%d,%d) \n", p.first, p.second*myparser.get_track_step_x(), p.third*myparser.get_track_step_y());
 		if (mode == DETAILED && !global_detailed)
 		{
 			create_output(p, counter, startx, starty, endx, endy, currentlayer, prevlayer, str_route, part1, part2, viapart, true);
-			endx = p.second*myparser.get_track_step(p.first);
-			endy = p.third*myparser.get_track_step(p.first);
+			endx = p.second*myparser.get_track_step_x();
+			endy = p.third*myparser.get_track_step_y();
 			counter++;
 		}
 		// SHARED : SHOULD BE CHANGED TO BLOCKED AFTERWARDS
@@ -341,12 +342,12 @@ void tracePath(std::vector<std::vector<std::vector<cell>>>& cellDetails, triplet
 		if (counter != 0 && counter != total_size - 1)
 		{
 			if (mode == DETAILED)  // IF DETAILED AND BLOCK LATER
-				Grid[p.first][p.second][p.third] = SHARED;
+				Grid[p.first][p.second][p.third] = BLOCKED;
 			else if (mode == GLOBAL) // IF GLOBAL ROUTING
 				Grid[p.first][p.second][p.third]++;
 		}
 		if (mode == GLOBAL)
-		counter++;
+			counter++;
 	}
 
 	//cout << "Path in Moves: " << endl;
@@ -369,8 +370,8 @@ void tracePath(std::vector<std::vector<std::vector<cell>>>& cellDetails, triplet
 				printf("(%d,%d,%d) \n", p.first, p.second, p.third);
 			actual_coordinates.pop();
 			create_output(p, counter, startx, starty, endx, endy, currentlayer, prevlayer, str_route, part1, part2, viapart, false);
-			endx = p.second*myparser.get_track_step(p.first);
-			endy = p.third*myparser.get_track_step(p.first);
+			endx = p.second*myparser.get_track_step_x();
+			endy = p.third*myparser.get_track_step_y();
 			counter++;
 		}
 	}
@@ -424,7 +425,7 @@ bool generate_and_check_dest(triplet new_node, triplet parent_node, std::vector<
 
 			newF = newG + newH;
 
-			// If it isn�t on the open list, add it to
+			// If it isnt on the open list, add it to
 			// the open list. Make the current square
 			// the parent of this square. Record the
 			// f, g, and h costs of the square cell
@@ -777,7 +778,7 @@ void  GlobalRouting(ThreeDimensions GlobalGrid, std::vector <std::pair<std::pair
 						new_current_pins_coordinates.first = j;
 						new_current_pins_coordinates.second = k;
 					}
-					if (coordinatesj + j < grid[coordinatesi].size() && coordinatesk + k < grid[coordinatesi][coordinatesj+j].size())
+					if (coordinatesj + j < grid[coordinatesi].size() && coordinatesk + k < grid[coordinatesi][coordinatesj + j].size())
 						tempPath[pathi][j][k] = grid[coordinatesi][coordinatesj + j][coordinatesk + k];
 				}
 			}
@@ -925,8 +926,8 @@ void  GlobalRouting(ThreeDimensions GlobalGrid, std::vector <std::pair<std::pair
 								new_current_pins_coordinates.first = j;
 								new_current_pins_coordinates.second = k;
 							}
-							if (coordinatesj+y < grid[coordinatesi].size() && coordinatesk + x < grid[coordinatesi][coordinatesj+y].size())
-							tempPath[pathi][j][k] = grid[coordinatesi][coordinatesj + y][coordinatesk + x];
+							if (coordinatesj + y < grid[coordinatesi].size() && coordinatesk + x < grid[coordinatesi][coordinatesj + y].size())
+								tempPath[pathi][j][k] = grid[coordinatesi][coordinatesj + y][coordinatesk + x];
 							x++;
 						}
 						y++;
@@ -957,8 +958,8 @@ void  GlobalRouting(ThreeDimensions GlobalGrid, std::vector <std::pair<std::pair
 			while (!tempstack2.empty()) tempstack2.pop();
 		}
 		else if (flag_global) {
- 			failed_routing.push_back(std::make_pair(triplet(metal1, prev_pins_coordinates.first, prev_pins_coordinates.second),
-				triplet(metal2, current_pins_coordinates.first, current_pins_coordinates.second)));
+			failed_routing.push_back(std::make_pair(triplet(current_pins_coordinates.first, current_pins_coordinates.second, metal2),
+				triplet(prev_pins_coordinates.first, prev_pins_coordinates.second, metal1)));
 			failed_routing_name.push_back(net_name);
 
 		}
@@ -980,11 +981,11 @@ void  GlobalRouting(ThreeDimensions GlobalGrid, std::vector <std::pair<std::pair
 }
 
 
-int main(int argc, char* argv[])
+//int main(int argc, char* argv[])
+int main()
 {
 	int x, y;
-	int metal;
-	if (argc < 6)
+/*	if (argc < 6)
 	{
 		std::cout << " Wrong number of input \n";
 		return EXIT_FAILURE;
@@ -994,16 +995,31 @@ int main(int argc, char* argv[])
 		myparser.set_lef(argv[2]);
 		GBOXsize = std::stoi(argv[3]);
 		congestion = std::stoi(argv[4]);
-		enable_output = std::stoi(argv[5]);
-//	myparser.set_def("cpu_unroute.def");
-//	myparser.set_lef("osu035.lef");
+		enable_output = std::stoi(argv[5]);*/
+	int xx[10], yy[10];
+	int d = 0;
+	Tree flutetree;
+	int flutewl;
+
+for (int i = 0; i < 10; ++i){
+	std::cin >> xx[i] >> yy[i];
+	}
+	readLUT();
+
+	flutetree = flute(d, xx, yy, ACCURACY);
+	printf("FLUTE wirelength = %d\n", flutetree.length);
+
+	flutewl = flute_wl(d, xx, yy, ACCURACY);
+	printf("FLUTE wirelength (without RSMT construction) = %d\n", flutewl);
+	
+			myparser.set_def("cpu_unroute.def");
+			myparser.set_lef("osu035.lef");
 		myparser.Parse_DEF();
 		myparser.Parse_LEF();
 		if (enable_output)
 			myparser.print_output();
 		ThreeDimensions grid;
 		myparser.create_grid(grid);
-		TwoDimensions matrix;
 		ThreeDimensions GlobalMatrix;
 		mypq_type ordered_output = myparser.order_the_nets();
 
@@ -1024,12 +1040,12 @@ int main(int argc, char* argv[])
 		{
 			myvector.push_back(std::make_pair(std::make_pair(failed_routing[i].first, failed_routing[i].second), std::make_pair(0, failed_routing_name[i])));
 		}
-	//	std::cout << "take 2\n\n";
-	//	GlobalRouting(GlobalMatrix, myvector, grid);
+			std::cout << "take 2\n\n";
+			GlobalRouting(GlobalMatrix, myvector, grid);
 		std::cout << " this is global failure " << global_fail << "\n this is detailed failure " << detailed_fail << '\n';
-	//	std::cout << " THIS IS THE SIZE OF FAILED_ROUTING " << failed_routing.size() << '\n';
+		//	std::cout << " THIS IS THE SIZE OF FAILED_ROUTING " << failed_routing.size() << '\n';
 		PrintDEF("cpu_unroute.def");
-	}
+//	}
 	system("pause");
 	return 0;
 }
