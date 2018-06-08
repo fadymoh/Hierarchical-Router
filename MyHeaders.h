@@ -46,11 +46,10 @@ public:
 	{
 		reverse = revparam;
 	}
-	bool operator() (const std::pair<std::pair<triplet, triplet>, std::pair<float, str>> & lhs, const std::pair<std::pair<triplet, triplet>,
-		std::pair<float, str>> &rhs) const
+	bool operator() (const std::pair<str,int> & lhs, const std::pair<str,int> &rhs) const
 	{
-		if (reverse) return (lhs.second.first>rhs.second.first);
-		else return (lhs.second.first<rhs.second.first);
+		if (reverse) return (lhs.second>rhs.second);
+		else return (lhs.second<rhs.second);
 	}
 };
 
@@ -73,11 +72,9 @@ struct search_node {
 
 };
 
-typedef std::priority_queue<std::pair<std::pair<triplet, triplet>, std::pair<float, str>>, std::vector<std::pair<std::pair<triplet, triplet>,
-	std::pair<float, str>>>, mycomparison> mypq_type;
+typedef std::priority_queue<std::pair<str,int>, std::vector<std::pair<str,int>>, mycomparison> mypq_type;
+
 typedef std::vector<int> OneDimension;
-
-
 typedef std::vector<OneDimension> TwoDimensions;
 typedef std::vector<TwoDimensions> ThreeDimensions;
 

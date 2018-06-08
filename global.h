@@ -1,3 +1,5 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #ifndef  _GLOBAL_H_
 #define  _GLOBAL_H_
 
@@ -7,12 +9,12 @@
 #define  FALSE  0
 #define  MAXLONG  0x7fffffffL
 
-struct point
+struct ppoint
 {
   long    x, y;
 };
 
-typedef  struct point Point;
+typedef  struct ppoint Point;
 
 typedef  long nn_array[8];
 

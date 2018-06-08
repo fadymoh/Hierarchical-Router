@@ -6,10 +6,12 @@
 #include <utility>
 #include <functional>
 #include <iostream>
+#include "flute.h"
 #include "MyHeaders.h"
 class Parser {
 
 private:
+	std::unordered_map <str, std::vector<std::pair<triplet, triplet>>> my_ordered_nets;
 	std::unordered_map<str, mystruct> components; //Contains all the components and their sizes locations and their pins sizes and location
 	std::unordered_map <str, tracks> track; //contains the information about the tracks
 	std::unordered_map<str, pin_info> pins; //contains the primary pins locations
@@ -22,6 +24,7 @@ private:
 	char arr[400];
 	std::vector<std::string> split(const char *, char);
 	std::vector <std::string> end_vector(std::ifstream &x);
+
 public:
 	Parser();
 	TwoDimensions makegridlayer(int);
@@ -32,7 +35,9 @@ public:
 	std::unordered_map<str, mystruct> getComponents();
 	std::unordered_map<str, pin_info> getPins();
 	std::unordered_map<str, std::vector<std::pair<str, str>>> getNets();
-	mypq_type order_the_nets();
+	
+	std::vector<str> get_net_names();
+	//mypq_type order_the_nets();
 	void Parse_DEF();
 	void Parse_LEF();
 	void create_grid(ThreeDimensions &);
@@ -42,6 +47,9 @@ public:
 	bool IsPrimary(str);
 	int get_track_step_x();
 	int get_track_step_y();
+	std::vector<std::pair<triplet, triplet>> get_net_pairs(str);
+	void order_the_nets();
+
 	~Parser();
 };
 

@@ -50,17 +50,37 @@ void Parser::print_output()
 		std::cout << '\n';
 	}
 }
-
-mypq_type Parser::order_the_nets()
+void Parser::order_the_nets()
 {
 	auto it = nets.begin();
+	mypq_type return_PQ;
+	triplet prev, current;
 	int metal_1, metal_2;
 	metal_1 = metal_2 = 1;
-	mypq_type return_PQ;
+
+	int d = 0;
+	Tree flutetree;
+	int flutewl;
+	readLUT();
+
 	while (it != nets.end())
 	{
+		int *xx, *yy;
+		 xx = new int[it->second.size()];
+		 yy = new int[it->second.size()];
+		d = 0;
 
-		triplet current, prev; //first is x-axis and second is y-axis
+		bool flag = true;
+		if (pins.find(it->first) != pins.end()) // it is a primary pin and has coordinates
+		{
+			prev.first = pins[it->first].x;
+			prev.second = pins[it->first].y;
+			prev.third = pins[it->first].metal_layer;
+			xx[d] = prev.first;
+			yy[d++] = prev.second;
+			flag = false;
+		}
+		
 		for (int x = 0; x < it->second.size(); ++x)
 		{
 			int i;
@@ -71,42 +91,65 @@ mypq_type Parser::order_the_nets()
 
 			for (i = 0; i < components[gate_name].connected_gates[temp].pins_connections.size(); ++i)
 				if (components[gate_name].connected_gates[temp].pins_connections[i].first == it->second[x].second) break;
-			if (x == 0) {
-				current.first = prev.first = components[gate_name].connected_gates[temp].pins_connections[i].second.x;
-				current.second = prev.second = components[gate_name].connected_gates[temp].pins_connections[i].second.y;
-				if (IsPrimary(it->first)) {
-					std::pair<int, int> temp_pair = getPrimaryPinCoordinates(it->first, metal_1);
-					triplet temp_trip;
-					temp_trip.first = temp_pair.first;
-					temp_trip.second = temp_pair.second;
-					temp_trip.third = metal_1;
-					current.third = metal_2;
-					std::pair<triplet, triplet> mytriplet = std::make_pair(temp_trip, current);
-					float temp = sqrt(pow((current.first - temp_trip.first), 2) + pow((current.second - temp_trip.second), 2));
-					std::pair <float, str> second_pair = make_pair(temp, it->first);
-					return_PQ.push(make_pair(mytriplet, second_pair));
-					metal_1 = 1;
+			if (flag == true) //means it is not a primary pin
+			{
+				if (x == 0)
+				{
+					current.first = prev.first = components[gate_name].connected_gates[temp].pins_connections[i].second.x;
+					current.second = prev.second = components[gate_name].connected_gates[temp].pins_connections[i].second.y;
+					current.third = prev.third = 1;
+					xx[d] = prev.first;
+					yy[d++] = prev.second;
+				}
+				else
+				{
+					current.first = components[gate_name].connected_gates[temp].pins_connections[i].second.x;
+					current.second = components[gate_name].connected_gates[temp].pins_connections[i].second.y;
+					current.third = 1;
+					xx[d] = current.first;
+					yy[d++] = current.second;
+					my_ordered_nets[it->first].push_back(std::make_pair(prev, current));
 				}
 			}
-			else {
-
+			else // it is a primary pin
+			{
 				current.first = components[gate_name].connected_gates[temp].pins_connections[i].second.x;
 				current.second = components[gate_name].connected_gates[temp].pins_connections[i].second.y;
-				current.third = metal_1;
-				prev.third = metal_2;
-				float temp = sqrt(pow((current.first - prev.first), 2) + pow((current.second - prev.second), 2));
-
-				std::pair <triplet, triplet> mytriplet = std::make_pair(current, prev);
-				std::pair <float, str> second_pair = make_pair(temp, it->first);
-				return_PQ.push(make_pair(mytriplet, second_pair));
-				prev = current;
-
+				current.third = 1;
+				xx[d] = current.first;
+				yy[d++] = current.second;
+				my_ordered_nets[it->first].push_back(std::make_pair(prev, current));
 			}
+			prev = current;
 		}
+		flutetree = flute(d, xx, yy, ACCURACY);
+		return_PQ.push(std::make_pair(it->first, flutetree.length));
+		printf("FLUTE wirelength = %d\n", flutetree.length);
 		it++;
 	}
-
-	return return_PQ;
+	auto my_iterator = my_ordered_nets.begin();
+	int size = 0;
+	while (my_iterator != my_ordered_nets.end())
+	{
+		size += my_iterator->second.size();
+		my_iterator++;
+	}
+	std::cout << size;
+}
+std::vector<std::pair<triplet, triplet>> Parser::get_net_pairs(str My_net_name)
+{
+	return my_ordered_nets[My_net_name];
+}
+std::vector<str> Parser::get_net_names()
+{
+	std::vector<str> temp;
+	auto it = nets.begin();
+	while (it != nets.end())
+	{
+		temp.push_back(it->first);
+		it++;
+	}
+	return temp;
 }
 TwoDimensions Parser::makegridlayer(int layer)
 {
