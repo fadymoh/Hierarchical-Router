@@ -24,7 +24,7 @@ private:
 	char arr[400];
 	std::vector<std::string> split(const char *, char);
 	std::vector <std::string> end_vector(std::ifstream &x);
-
+	mypq_type return_PQ;
 public:
 	Parser();
 	TwoDimensions makegridlayer(int);

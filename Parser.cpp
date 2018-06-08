@@ -53,7 +53,6 @@ void Parser::print_output()
 void Parser::order_the_nets()
 {
 	auto it = nets.begin();
-	mypq_type return_PQ;
 	triplet prev, current;
 	int metal_1, metal_2;
 	metal_1 = metal_2 = 1;
@@ -127,6 +126,7 @@ void Parser::order_the_nets()
 		printf("FLUTE wirelength = %d\n", flutetree.length);
 		it++;
 	}
+
 	auto my_iterator = my_ordered_nets.begin();
 	int size = 0;
 	while (my_iterator != my_ordered_nets.end())
@@ -143,11 +143,11 @@ std::vector<std::pair<triplet, triplet>> Parser::get_net_pairs(str My_net_name)
 std::vector<str> Parser::get_net_names()
 {
 	std::vector<str> temp;
-	auto it = nets.begin();
-	while (it != nets.end())
+	while (!return_PQ.empty())
 	{
-		temp.push_back(it->first);
-		it++;
+		std::pair<str, int> temp_pair = return_PQ.top();
+		return_PQ.pop();
+		temp.push_back(temp_pair.first);
 	}
 	return temp;
 }

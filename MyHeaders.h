@@ -42,7 +42,7 @@ class mycomparison
 {
 	bool reverse;
 public:
-	mycomparison(const bool& revparam = false)
+	mycomparison(const bool& revparam = true)
 	{
 		reverse = revparam;
 	}
