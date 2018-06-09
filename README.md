@@ -17,11 +17,12 @@ The program is able to route 6000 nets in 10 seconds and prints the output route
 
 It is an open source, so anyone can take the code and optimize, improve, and add on it. Just give a star :)
 
-Current limitations: 1) Rip & Reroute has to be implemented.
-                     2) Need to take all the rects of each pin into account, as when a pin fails to route from one rect, the other has to                           be taken into account.
-                     3) The obstacles of all the cells has to be taken into account.
-                     4) Making the code more Object-Oriented.
-                     5) Collapse the layers on each other.
+Current limitations:
+1) Rip & Reroute has to be implemented.
+2) Need to take all the rects of each pin into account, as when a pin fails to route from one rect, the other has to                           be taken into account.
+3) The obstacles of all the cells has to be taken into account.
+4) Making the code more Object-Oriented.
+5) Collapse the layers on each other.
                      
 Build Commands: g++ Source.cpp Parser.cpp -std=c++11
 Command line args: Def_file Lef_file Gbox Congestion enable_output
