@@ -4,7 +4,16 @@ This is a hierarchical router that uses A* search algorithm to route given pairs
 
 The routing starts by parsing the given DEF & LEF files using unordered_maps (Hash Tables), to map the gates and their pin locations to the given die and divide the grid using the tracks found inside the DEF file.
 
-The program is able to route 6000 nets in 5 mins and prints the output routed DEF that can be viewed using any layout viewer.
+The grid is created by getting the GCD of all the X tracks and the GCD of all the Y tracks to make grid layers of common size, and then 
+the GCD is used to block a certain number of tracks according to the ratio between the GCD and the given track's pitch.
+
+Next, ordering the nets is based on finding the length of the net. A rectilinear Minimum Steiner Tree is used to calculate the length
+of net and then pushed on a priority queue according to the length along with the net name.
+
+Finally, in the routing phase, a global grid is created using the given GBOXsize, and A* is used to route the given pins globally and then
+detailed after constructing a tempPath from the directions returned from the global routing. The Global routing function uses 2 functions from the parser class to get the net names and then using that net name get a vector of pairs of triplets (data structure to encapsulate the 3 coordinates of any pin x, y, z) containing all the routing coordinates of that net. And then the output is printed in the DEF file.
+
+The program is able to route 6000 nets in 10 seconds and prints the output routed DEF that can be viewed using any layout viewer.
 
 It is an open source, so anyone can take the code and optimize, improve, and add on it. Just give a star :)
 
