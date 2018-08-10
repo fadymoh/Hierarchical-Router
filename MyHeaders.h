@@ -6,11 +6,9 @@
 #include <queue>
 #include <functional>
 #include <utility>
-
-//using namespace std;
-typedef std::string str;
-typedef std::pair<int, int> p;
-typedef std::pair<int, std::pair<int, int>> pp;
+using namespace std;
+typedef pair<int, int> p;
+typedef pair<int, pair<int, int>> pp;
 
 struct cell {
 	int parent_i, parent_j, parent_k;
@@ -32,7 +30,6 @@ struct triplet {
 		third = z;
 	}
 
-
 	bool operator == (triplet& z) {
 		return (first == z.first && second == z.second && third == z.third);
 	}
@@ -42,11 +39,11 @@ class mycomparison
 {
 	bool reverse;
 public:
-	mycomparison(const bool& revparam = true)
+	mycomparison(const bool& revparam = false)
 	{
 		reverse = revparam;
 	}
-	bool operator() (const std::pair<str,int> & lhs, const std::pair<str,int> &rhs) const
+	bool operator() (const pair<string,int> & lhs, const pair<string,int> &rhs) const
 	{
 		if (reverse) return (lhs.second>rhs.second);
 		else return (lhs.second<rhs.second);
@@ -72,46 +69,46 @@ struct search_node {
 
 };
 
-typedef std::priority_queue<std::pair<str,int>, std::vector<std::pair<str,int>>, mycomparison> mypq_type;
+typedef priority_queue<pair<string,int>, vector<pair<string,int>>, mycomparison> mypq_type;
 
-typedef std::vector<int> OneDimension;
-typedef std::vector<OneDimension> TwoDimensions;
-typedef std::vector<TwoDimensions> ThreeDimensions;
+typedef vector<int> OneDimension;
+typedef vector<OneDimension> TwoDimensions;
+typedef vector<TwoDimensions> ThreeDimensions;
 
-typedef std::vector<bool> OneDimensionBool;
-typedef std::vector<OneDimensionBool> TwoDimensionsBool;
-typedef std::vector<TwoDimensionsBool> ThreeDimensionsBool;
+typedef vector<bool> OneDimensionBool;
+typedef vector<OneDimensionBool> TwoDimensionsBool;
+typedef vector<TwoDimensionsBool> ThreeDimensionsBool;
 
-typedef std::vector<cell> OneDimensionCell;
-typedef std::vector<OneDimensionCell> TwoDimensionsCell;
-typedef std::vector<TwoDimensionsCell> ThreeDimensionsCell;
+typedef vector<cell> OneDimensionCell;
+typedef vector<OneDimensionCell> TwoDimensionsCell;
+typedef vector<TwoDimensionsCell> ThreeDimensionsCell;
 
 
 struct rect {
-	std::string pin_name;
+	string pin_name;
 	float x1, x2, y1, y2;
 };
 struct pin_info {
 	int metal_layer;
 	int x, y;
-	std::string connected_pin;
+	string connected_pin;
 };
 struct gate_info {
 	int x, y;
-	std::string orientation;
-	std::vector<std::pair<std::string, pin_info>> pins_connections; //first is the pin, second is the connected wire to that pin
+	string orientation;
+	vector<pair<string, pin_info>> pins_connections; //first is the pin, second is the connected wire to that pin
 };
 struct mystruct {
-	std::unordered_map<std::string, gate_info> connected_gates;
-	std::vector <std::pair<std::string, rect>> pins_sizes;
+	unordered_map<string, gate_info> connected_gates;
+	vector <pair<string, rect>> pins_sizes;
 	bool i_o_pin = false;
 	float size_x, size_y;
 };
 
 struct StringNames {
-	str netname;
-	str gatename;
-	str pinname;
+	string netname;
+	string gatename;
+	string pinname;
 };
 
 struct tracks {
@@ -121,7 +118,7 @@ struct tracks {
 	bool found_before = false, found_via = false;
 };
 struct EmptyStr {
-	bool operator()(const std::string& s) {
+	bool operator()(const string& s) {
 		return (s == "");
 	}
 };

@@ -11,14 +11,14 @@
 class Parser {
 
 private:
-	std::unordered_map <str, std::vector<std::pair<triplet, triplet>>> my_ordered_nets;
-	std::unordered_map<str, mystruct> components; //Contains all the components and their sizes locations and their pins sizes and location
-	std::unordered_map <str, tracks> track; //contains the information about the tracks
-	std::unordered_map<str, pin_info> pins; //contains the primary pins locations
-	std::unordered_map<str, std::vector<std::pair<str, str>>> nets; //contains the the net and all of its connected components in a vector of pairs where the
+	std::unordered_map <string, std::vector<std::pair<triplet, triplet>>> my_ordered_nets;
+	std::unordered_map<string, mystruct> components; //Contains all the components and their sizes locations and their pins sizes and location
+	std::unordered_map <string, tracks> track; //contains the information about the tracks
+	std::unordered_map<string, pin_info> pins; //contains the primary pins locations
+	std::unordered_map<string, std::vector<std::pair<string, string>>> nets; //contains the the net and all of its connected components in a vector of pairs where the
 																	//first element is the gate name and the second is the connected pin
 	float site_width, row_height;
-	str pin_name, input_file, output_file, lef_file;
+	string pin_name, input_file, output_file, lef_file;
 	int x_dimension, y_dimension, Units_distance, xinit, xfinal, yinit, yfinal, final_step_x, final_step_y;
 	std::ifstream file, lef;
 	char arr[400];
@@ -28,26 +28,26 @@ private:
 public:
 	Parser();
 	TwoDimensions makegridlayer(int);
-	void set_lef(str);
-	void set_def(str);
+	void set_lef(string);
+	void set_def(string);
 	void print_output();
 	void getGridDimensions(int&, int&);
-	std::unordered_map<str, mystruct> getComponents();
-	std::unordered_map<str, pin_info> getPins();
-	std::unordered_map<str, std::vector<std::pair<str, str>>> getNets();
+	std::unordered_map<string, mystruct> getComponents();
+	std::unordered_map<string, pin_info> getPins();
+	std::unordered_map<string, std::vector<std::pair<string, string>>> getNets();
 	
-	std::vector<str> get_net_names();
+	std::vector<string> get_net_names();
 	//mypq_type order_the_nets();
 	void Parse_DEF();
 	void Parse_LEF();
 	void create_grid(ThreeDimensions &);
-	std::vector<std::pair<str, str>> getNetPairs(str);
-	std::pair<int, int> getConnectedPinCoordinates(str, str, int&);
-	std::pair<int, int> getPrimaryPinCoordinates(str, int&);
-	bool IsPrimary(str);
+	std::vector<std::pair<string, string>> getNetPairs(string);
+	std::pair<int, int> getConnectedPinCoordinates(string, string, int&);
+	std::pair<int, int> getPrimaryPinCoordinates(string, int&);
+	bool IsPrimary(string);
 	int get_track_step_x();
 	int get_track_step_y();
-	std::vector<std::pair<triplet, triplet>> get_net_pairs(str);
+	std::vector<std::pair<triplet, triplet>> get_net_pairs(string);
 	void order_the_nets();
 
 	~Parser();

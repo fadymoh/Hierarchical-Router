@@ -24,8 +24,8 @@ Current limitations:
 4) Making the code more Object-Oriented.
 5) Collapse the layers on each other.
                      
-Build Commands: g++ Source.cpp Parser.cpp -std=c++11
+Build Commands: g++ Source.cpp Parser.cpp neighbors.cpp mst2.cpp memAlloc.cpp heap.cpp flute_mst.cpp flute.cpp err.cpp dl.cpp dist.cpp bookshelf_IO.cpp -std=c++11
 Command line args: Def_file Lef_file Gbox Congestion enable_output
-Example:           bcd.def  osu035.lef  5   50  1
+Example:           cpu_unroute.def  osu035.lef  10  40  1
 
 If you have any comments, feel free to message me at fadyabuelmagd@gmail.com

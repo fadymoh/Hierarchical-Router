@@ -8,9 +8,9 @@
 #include <assert.h>
 #include "dl.h"
 #include "flute.h"
-
+#include <algorithm>
 #include "mst2.h"
-
+using namespace std;
 #define INFNTY INT_MAX
 
 #define D2M D2(1)     // Max net degree that flute_mr will handle

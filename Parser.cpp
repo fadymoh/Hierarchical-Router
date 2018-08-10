@@ -1,23 +1,25 @@
 #include "Parser.h"
 #include <vector>
+#include <string>
+using namespace std;
 unsigned int gcd(unsigned int n1, unsigned int n2) {
 	return (n2 == 0) ? n1 : gcd(n2, n1 % n2);
 }
-std::vector<std::string> Parser::split(const char *str, char c = ' ')
+vector<string> Parser::split(const char *str, char c = ' ')
 {
-	std::vector<std::string> result;
+	vector<string> result;
 	do {
 		const char *begin = str;
 		while (*str != c && *str && *str != '\t') str++;
-		result.push_back(std::string(begin, str));
+		result.push_back(string(begin, str));
 	} while (0 != *str++);
 	return result;
 }
 
-std::vector <std::string> Parser::end_vector(std::ifstream &x)
+vector <string> Parser::end_vector(ifstream &x)
 {
 	x.getline(arr, 400);
-	std::vector <std::string> myvector = split(arr, ' ');
+	vector <string> myvector = split(arr, ' ');
 	myvector.erase(remove_if(myvector.begin(), myvector.end(), EmptyStr()), myvector.end());
 	return myvector;
 }
@@ -25,11 +27,11 @@ Parser::Parser()
 {
 
 }
-void Parser::set_def(str input)
+void Parser::set_def(string input)
 {
 	input_file = input;
 }
-void Parser::set_lef(str input)
+void Parser::set_lef(string input)
 {
 	lef_file = input;
 }
@@ -37,17 +39,17 @@ void Parser::print_output()
 {
 	auto it = components.begin();
 	while (it != components.end()) {
-		std::cout << it->first << ' ' << it->second.size_x / site_width << " sites\n\n";
+		cout << it->first << ' ' << it->second.size_x / site_width << " sites\n\n";
 		auto itz = it->second.connected_gates.begin();
 		while (itz != it->second.connected_gates.end()) {
-			std::cout << itz->first << ' ' << itz->second.x << ' ' << itz->second.y << ' ' << itz->second.orientation << '\t';
+			cout << itz->first << ' ' << itz->second.x << ' ' << itz->second.y << ' ' << itz->second.orientation << '\t';
 			for (size_t i = 0; i < itz->second.pins_connections.size(); ++i)
-				std::cout << itz->second.pins_connections[i].first << " = " << itz->second.pins_connections[i].second.connected_pin << '\t';
-			std::cout << '\n';
+				cout << itz->second.pins_connections[i].first << " = " << itz->second.pins_connections[i].second.connected_pin << '\t';
+			cout << '\n';
 			itz++;
 		}
 		it++;
-		std::cout << '\n';
+		cout << '\n';
 	}
 }
 void Parser::order_the_nets()
@@ -72,8 +74,8 @@ void Parser::order_the_nets()
 		bool flag = true;
 		if (pins.find(it->first) != pins.end()) // it is a primary pin and has coordinates
 		{
-			prev.first = pins[it->first].x;
-			prev.second = pins[it->first].y;
+			prev.first = pins[it->first].x / final_step_x;
+			prev.second = pins[it->first].y  / final_step_y;
 			prev.third = pins[it->first].metal_layer;
 			xx[d] = prev.first;
 			yy[d++] = prev.second;
@@ -83,10 +85,10 @@ void Parser::order_the_nets()
 		for (int x = 0; x < it->second.size(); ++x)
 		{
 			int i;
-			str temp = it->second[x].first;
+			string temp = it->second[x].first;
 			for (i = temp.length() - 1; i >= 0; --i)
 				if (temp[i] == '_') break;
-			str gate_name = temp.substr(0, i);
+			string gate_name = temp.substr(0, i);
 
 			for (i = 0; i < components[gate_name].connected_gates[temp].pins_connections.size(); ++i)
 				if (components[gate_name].connected_gates[temp].pins_connections[i].first == it->second[x].second) break;
@@ -107,24 +109,27 @@ void Parser::order_the_nets()
 					current.third = 1;
 					xx[d] = current.first;
 					yy[d++] = current.second;
-					my_ordered_nets[it->first].push_back(std::make_pair(prev, current));
+					my_ordered_nets[it->first].push_back(make_pair(prev, current));
 				}
 			}
 			else // it is a primary pin
 			{
-				current.first = components[gate_name].connected_gates[temp].pins_connections[i].second.x;
-				current.second = components[gate_name].connected_gates[temp].pins_connections[i].second.y;
+				current.first = (components[gate_name].connected_gates[temp].pins_connections[i].second.x);
+				current.second = (components[gate_name].connected_gates[temp].pins_connections[i].second.y);
 				current.third = 1;
 				xx[d] = current.first;
 				yy[d++] = current.second;
-				my_ordered_nets[it->first].push_back(std::make_pair(prev, current));
+				my_ordered_nets[it->first].push_back(make_pair(prev, current));
 			}
 			prev = current;
 		}
+		if (d < 1) d = 1;
 		flutetree = flute(d, xx, yy, ACCURACY);
-		return_PQ.push(std::make_pair(it->first, flutetree.length));
+		return_PQ.push(make_pair(it->first, flutetree.length));
 		printf("FLUTE wirelength = %d\n", flutetree.length);
 		it++;
+		//delete[] xx;
+		//delete[] yy;
 	}
 
 	auto my_iterator = my_ordered_nets.begin();
@@ -134,18 +139,20 @@ void Parser::order_the_nets()
 		size += my_iterator->second.size();
 		my_iterator++;
 	}
-	std::cout << size;
+	auto tempz = return_PQ.top();
+
+	cout << size;
 }
-std::vector<std::pair<triplet, triplet>> Parser::get_net_pairs(str My_net_name)
+vector<pair<triplet, triplet>> Parser::get_net_pairs(string My_net_name)
 {
 	return my_ordered_nets[My_net_name];
 }
-std::vector<str> Parser::get_net_names()
+vector<string> Parser::get_net_names()
 {
-	std::vector<str> temp;
+	vector<string> temp;
 	while (!return_PQ.empty())
 	{
-		std::pair<str, int> temp_pair = return_PQ.top();
+		pair<string, int> temp_pair = return_PQ.top();
 		return_PQ.pop();
 		temp.push_back(temp_pair.first);
 	}
@@ -153,7 +160,7 @@ std::vector<str> Parser::get_net_names()
 }
 TwoDimensions Parser::makegridlayer(int layer)
 {
-	str layer_string = "metal" + std::to_string(layer);
+	string layer_string = "metal" + to_string(layer);
 	TwoDimensions grid;
 	grid.resize(x_dimension);
 	for (int i = 0; i < x_dimension; ++i)
@@ -193,7 +200,7 @@ TwoDimensions Parser::makegridlayer(int layer)
 			if (it->second.metal_layer == layer) {
 				int x = it->second.x / final_step_x;
 				int y = it->second.y / final_step_y;
-				if (grid[x][y] == -1) std::cout << "overwriting\n";
+				if (grid[x][y] == -1) cout << "overwriting\n";
 				else grid[x][y] = -1;
 			}
 			it++;
@@ -204,10 +211,10 @@ TwoDimensions Parser::makegridlayer(int layer)
 void Parser::Parse_DEF()
 {
 	file.open(input_file.c_str());
-	if (file.fail())	std::cout << " couldnt open the file \n";
+	if (file.fail())	cout << " couldnt open the file \n";
 	else //parsing the def
 		while (!file.eof()) {
-			std::vector <str> myvector = end_vector(file);
+			vector <string> myvector = end_vector(file);
 			if (myvector.size() >= 1)
 				if (myvector[0] == "UNITS")
 					Units_distance = stoi(myvector[3]);
@@ -248,13 +255,13 @@ void Parser::Parse_DEF()
 								int i;
 								for (i = myvector[1].length() - 1; i >= 0; --i)
 									if (myvector[1][i] == '_') break;
-								str gate_name = myvector[1].substr(0, i);
-								std::pair <str, pin_info> temp;
+								string gate_name = myvector[1].substr(0, i);
+								pair <string, pin_info> temp;
 								pin_info temp_pin;
 								temp_pin.connected_pin = pin_name;
 								temp = make_pair(myvector[2], temp_pin);
 								components[gate_name].connected_gates[myvector[1]].pins_connections.push_back(temp);
-								std::pair <str, str> temp2;
+								pair <string, string> temp2;
 								temp2 = make_pair(myvector[1], myvector[2]); //gate name is first and pin name is second
 								nets[pin_name].push_back(temp2);
 							}
@@ -263,7 +270,7 @@ void Parser::Parse_DEF()
 				}
 				else if (myvector[0] == "PINS") {
 					bool first = false;
-					str primary_pin;
+					string primary_pin;
 					while (!(myvector[0] == "END") || !first) {
 						first = true;
 						myvector = end_vector(file);
@@ -271,10 +278,17 @@ void Parser::Parse_DEF()
 						else if (myvector[1] == "LAYER")
 							pins[primary_pin].metal_layer = stoi(myvector[2].substr(5));
 						else if (myvector[1] == "PLACED") {
-							pins[primary_pin].x = stoi(myvector[3]) - xinit;
-							pins[primary_pin].y = stoi(myvector[4]) - yinit;
-						}
+							if (stoi(myvector[3]) < 0)
+								pins[primary_pin].x = stoi(myvector[3]) - xinit;
+							else
+								pins[primary_pin].x = stoi(myvector[3]);
+							if (stoi(myvector[4]) < 0)
+								pins[primary_pin].y = stoi(myvector[4]) - yinit;
+							else
+								pins[primary_pin].y = stoi(myvector[4]);
 
+
+						}
 					}
 				}
 		}
@@ -284,10 +298,10 @@ void Parser::Parse_LEF()
 {
 	bool first = true;
 	lef.open(lef_file.c_str());
-	if (lef.fail())		std::cout << " couldnt open the file \n";
+	if (lef.fail())		cout << " couldnt open the file \n";
 	else
 		while (!lef.eof()) {
-			std::vector <str> myvector = end_vector(lef);
+			vector <string> myvector = end_vector(lef);
 			if (myvector.size() >= 1) {
 				if (myvector[0] == "SITE" && myvector[1] == "core" && first) {
 					while (myvector[0] != "SIZE")	myvector = end_vector(lef);
@@ -296,7 +310,7 @@ void Parser::Parse_LEF()
 					first = false;
 				}
 				else if (myvector[0] == "MACRO") {
-					str gate_name = myvector[1], pin;
+					string gate_name = myvector[1], pin;
 					bool flag = false, start = true;
 					auto it = components.find(myvector[1]);
 					if (it != components.end())
@@ -312,7 +326,7 @@ void Parser::Parse_LEF()
 								flag = false;
 							}
 							else if (myvector[0] == "RECT" && !flag) {
-								std::pair<str, rect> temp;
+								pair<string, rect> temp;
 								rect temp_rect;
 								temp_rect.x1 = stof(myvector[1]) * 100;
 								temp_rect.x2 = stof(myvector[3]) * 100;
@@ -325,7 +339,7 @@ void Parser::Parse_LEF()
 						}
 				}
 				else if (myvector[0] == "LAYER") {
-					str layer_name = myvector[1];
+					string layer_name = myvector[1];
 					bool start = true;
 					auto it = track.find(layer_name);
 					if (it != track.end() && !it->second.found_before)
@@ -345,9 +359,9 @@ void Parser::Parse_LEF()
 							}
 						}
 					else {
-						str via_name = myvector[1];
+						string via_name = myvector[1];
 						int pos = via_name.find("via");
-						if (pos != str::npos) {
+						if (pos != string::npos) {
 							auto itz = track.find("metal" + via_name.substr(3));
 							if (itz != track.end() && !itz->second.found_via)
 								while (!(myvector[0] == "END" && myvector[1] == via_name)) {
@@ -370,7 +384,7 @@ void Parser::create_grid(ThreeDimensions &x)
 	int current_x = -1 , current_y = -1;
 	for (int i = 1; i < track.size(); ++i)
 	{
-		str layer_string = "metal" + std::to_string(i);
+		string layer_string = "metal" + to_string(i);
 		if (track[layer_string].orientation == 'X')
 		{
 			if (current_x == -1)
@@ -390,7 +404,7 @@ void Parser::create_grid(ThreeDimensions &x)
 	final_step_x = current_x;
 	final_step_y = current_y;
 	for (int i = 1; i < track.size() + 1; ++i) {
-		str layer_string = "metal" + std::to_string(i);
+		string layer_string = "metal" + to_string(i);
 		y_dimension = yfinal / current_y +1;
 		x_dimension = xfinal / current_x +1;
 		x[i].resize(x_dimension);
@@ -400,7 +414,7 @@ void Parser::create_grid(ThreeDimensions &x)
 	}
 	for (int i = 1; i < track.size() + 1; ++i)
 	{
-		str layer_string = "metal" + std::to_string(i);
+		string layer_string = "metal" + to_string(i);
 		if (track[layer_string].orientation == 'X')
 		{
 			if (track[layer_string].third != final_step_x)
@@ -437,29 +451,29 @@ Parser::~Parser()
 
 }
 
-std::unordered_map<str, mystruct> Parser::getComponents()
+unordered_map<string, mystruct> Parser::getComponents()
 {
 	return components;
 }
-std::unordered_map<str, pin_info> Parser::getPins()
+unordered_map<string, pin_info> Parser::getPins()
 {
 	return pins;
 }
-std::unordered_map<str, std::vector<std::pair<str, str>>> Parser::getNets()
+unordered_map<string, vector<pair<string, string>>> Parser::getNets()
 {
 	return nets;
 }
 
 
-std::vector<std::pair<str, str>> Parser::getNetPairs(str net_name)
+vector<pair<string, string>> Parser::getNetPairs(string net_name)
 {
 	return nets[net_name];
 }
 
-std::pair<int, int> Parser::getConnectedPinCoordinates(str gate_name, str pin_name, int & metal)
+pair<int, int> Parser::getConnectedPinCoordinates(string gate_name, string pin_name, int & metal)
 {
-	std::pair<int, int> xy;
-	str temp = gate_name;
+	pair<int, int> xy;
+	string temp = gate_name;
 	int i;
 	for (i = temp.length() - 1; i >= 0; --i)
 		if (temp[i] == '_') break;
@@ -477,7 +491,7 @@ std::pair<int, int> Parser::getConnectedPinCoordinates(str gate_name, str pin_na
 	return xy;
 }
 
-bool Parser::IsPrimary(str pin_name)
+bool Parser::IsPrimary(string pin_name)
 {
 
 	auto found = pins.find(pin_name);
@@ -489,9 +503,9 @@ bool Parser::IsPrimary(str pin_name)
 
 }
 
-std::pair<int, int> Parser::getPrimaryPinCoordinates(str pin_name, int& metal)
+pair<int, int> Parser::getPrimaryPinCoordinates(string pin_name, int& metal)
 {
-	std::pair<int, int> xy;
+	pair<int, int> xy;
 	xy.first = pins[pin_name].x / (final_step_x);
 	xy.second = pins[pin_name].y / (final_step_y);
 	metal = pins[pin_name].metal_layer;

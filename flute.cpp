@@ -5,6 +5,8 @@
 #include <limits.h>
 #include <math.h>
 #include "flute.h"
+#include <algorithm>
+using namespace std;
 #define _CRT_SECURE_NO_WARNINGS
 
 #if D<=7
