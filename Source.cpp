@@ -13,6 +13,9 @@
 #include <functional>
 #include <cfloat>
 #include <cmath>
+#include <chrono>
+
+using namespace std::chrono;
 using namespace std;
 #define GLOBAL 1
 #define DETAILED 0
@@ -24,7 +27,7 @@ int GBOXsize = 10;
 int congestion = 40;
 int enable_output = 0;
 int time_out_counter;
-int save_time_min, save_time_hour;
+int save_time_min, save_time_hour, save_time_seconds;
 int global_fail, detailed_fail;
 int metal_temp;
 
@@ -50,6 +53,7 @@ void save_time()
 	tm* gmtm = gmtime(&now);
 	save_time_min = gmtm->tm_min;
 	save_time_hour = gmtm->tm_hour;
+	save_time_seconds = gmtm->tm_sec;
 }
 void block_grid(ThreeDimensions &grid, vector <string> &directions, int &coordinatesi, int &coordinatesj, int &coordinatesk, bool block)
 {
@@ -531,12 +535,12 @@ void aStarSearch(ThreeDimensions& Grid, triplet src, triplet dest, bool mode) {
 		time_t now = time(0);
 		tm* gmtm = gmtime(&now);
 		int x = abs((save_time_hour * 60 + save_time_min) - (gmtm->tm_hour * 60 + gmtm->tm_min));
-		if ((mode == DETAILED && x >= 3) && mode != GLOBAL)
+		/*if ((mode == DETAILED && x >= 3) && mode != GLOBAL)
 		{
 			cout << " exceeded my time limit \n";
 			time_out_counter++;
 			return;
-		}
+		}*/
 		search_node current = pq.top();
 		pq.pop();
 
@@ -686,8 +690,7 @@ void  GlobalRouting(ThreeDimensions GlobalGrid, ThreeDimensions grid)
 
 			cout << ++OutCount << '\n';
 			net_name = nets[q];
-			if (net_name == "vdd")
-				cout << "x";
+		
 			current_pins_coordinates = make_pair(routing_coordinates[L].first.first, routing_coordinates[L].first.second);
 			prev_pins_coordinates = make_pair(routing_coordinates[L].second.first, routing_coordinates[L].second.second);
 			metal1 = routing_coordinates[L].first.third;
@@ -709,7 +712,7 @@ void  GlobalRouting(ThreeDimensions GlobalGrid, ThreeDimensions grid)
 			}
 			else
 			{
-				save_time();
+				//save_time();
 
 				int start_box_x = prev_pins_coordinates.first / GBOXsize, start_box_y = prev_pins_coordinates.second / GBOXsize;
 
@@ -775,7 +778,7 @@ void  GlobalRouting(ThreeDimensions GlobalGrid, ThreeDimensions grid)
 				global_detailed = true;
 				prev_pins_coordinates_temp = prev_pins_coordinates;
 				metal_temp = metal1;
-				save_time();
+				//save_time();
 				directions.clear();
 				aStarSearch(grid, (triplet(metal1, prev_pins_coordinates.first, prev_pins_coordinates.second)),
 					triplet(metal2, current_pins_coordinates.first, current_pins_coordinates.second), DETAILED);
@@ -827,6 +830,9 @@ int main(int argc, char* argv[])
 
 		//myparser.set_def("alu_divider_unroute.def");
 		//myparser.set_lef("osu035.lef");
+		high_resolution_clock::time_point t1 = high_resolution_clock::now();
+
+		
 		myparser.Parse_DEF();
 		myparser.Parse_LEF();
 		if (enable_output)
@@ -838,7 +844,8 @@ int main(int argc, char* argv[])
 
 		GlobalMatrix = createGlobalGrid(grid);
 		myparser.getGridDimensions(x, y);
-
+		save_time();
+	
 		GlobalRouting(GlobalMatrix, grid);
 		for (int i = 0; i < failed_routing.size(); i++)
 		{
@@ -854,6 +861,13 @@ int main(int argc, char* argv[])
 		}
 		cout << " this is global failure " << global_fail << "\n this is detailed failure " << detailed_fail << '\n';
 		PrintDEF(argv[1]);
+
+		high_resolution_clock::time_point t2 = high_resolution_clock::now();
+
+		auto duration = duration_cast<microseconds>(t2 - t1).count();
+		int min = (duration / 1000000) / 60;
+		int seconds = int(duration / 1000000) % 60;
+		cout << "it took " << min << "mins, and " << seconds << "seconds\n";
 		//PrintDEF("alu_divider_unroute.def");
 	}
 	system("pause");
